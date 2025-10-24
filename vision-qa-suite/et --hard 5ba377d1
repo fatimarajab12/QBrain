@@ -1,0 +1,104 @@
+[33mcommit 3b430f9a73b7a72cf4f958b45b8c0111ba351926[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Merge: e851ed1 5ba377d
+Author: Fatima   Rajab <fatimarajab678@gmail.com>
+Date:   Fri Oct 24 17:41:17 2025 +0300
+
+    Merge pull request #1 from fatimarajab12/UIFix
+    
+    UI fix
+
+[33mcommit 5ba377d1cb3f14f5ba6116511ee18468556bff68[m[33m ([m[1;31morigin/UIFix[m[33m, [m[1;32mUIFix[m[33m)[m
+Author: Fatima   Rajab <112514257+fatimarajab12@users.noreply.github.com>
+Date:   Fri Oct 24 17:33:43 2025 +0300
+
+    structere
+
+[33mcommit dfd7b8ee6bd870be98cd6842bfe48c63c6e1aa7d[m
+Author: Fatima   Rajab <112514257+fatimarajab12@users.noreply.github.com>
+Date:   Thu Oct 23 22:22:42 2025 +0300
+
+    fix ui: update login page with PixelBlast background and reorganize feature-details components
+
+[33mcommit 47566fb97250a55256408de30680d5f4581d559c[m
+Author: Fatima   Rajab <112514257+fatimarajab12@users.noreply.github.com>
+Date:   Thu Oct 23 15:31:41 2025 +0300
+
+    fix ui
+
+[33mcommit fd40325fb7d384042e338c91aa9cc0730b66dcf6[m
+Author: Fatima   Rajab <112514257+fatimarajab12@users.noreply.github.com>
+Date:   Thu Oct 23 04:37:09 2025 +0300
+
+     ui fixes
+
+[33mcommit e851ed16fe4b660eaad9fe86b582adfc7268130e[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Wed Oct 22 13:35:31 2025 +0000
+
+    Reverted to commit e7e55d63b5782e611b02e62fff65859f6ab88b35
+
+[33mcommit ccdd8b1cba9d24834ca604eacf5051cbfc4c8da8[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Wed Oct 22 13:30:59 2025 +0000
+
+    Refactor: Translate project to English
+
+[33mcommit 8d5796c97c1f33d1edd12814edcb650278bcbbee[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Wed Oct 22 13:26:12 2025 +0000
+
+    feat: Implement Bug Reports Page
+
+[33mcommit 5d679011d9737e0b45131de5ff9b4c6f793cf8b0[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Tue Oct 21 01:37:39 2025 +0000
+
+    Reverted to commit e7e55d63b5782e611b02e62fff65859f6ab88b35
+
+[33mcommit 860dfdc61fb58efb76ed5fa9302ef585a4c7e752[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Tue Oct 21 01:35:41 2025 +0000
+
+    Refactor: Update project vision and flow
+
+[33mcommit 50a1e7423c7eb641cd7426cd8a9273e694a3a695[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Tue Oct 21 01:30:49 2025 +0000
+
+    Fix: Update migration script
+
+[33mcommit e7e55d63b5782e611b02e62fff65859f6ab88b35[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Tue Oct 21 01:29:08 2025 +0000
+
+    feat: Implement database schema and RLS
+
+[33mcommit 460009cb1d6363a9eeb96f01055f16b1009f229e[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Mon Oct 20 00:54:33 2025 +0000
+
+    Enable backend services
+
+[33mcommit fb82e1ed7a69ac0db9ec1104964105687c473985[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Mon Oct 20 00:50:13 2025 +0000
+
+    Refactor dashboard and project pages
+
+[33mcommit 35ba72a4d732a97509d4260c722d97f584f62710[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Sun Oct 19 20:27:04 2025 +0000
+
+    Build remaining UI pages
+
+[33mcommit c02357544f117d9c0036aad4b51f5fc1a25686da[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Sun Oct 19 20:08:22 2025 +0000
+
+    Add AI-powered QA Assistant Web Tool
+
+[33mcommit dd1066de64f4876c1a77035a4f77ea1cb074d51b[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Sun Oct 19 20:05:56 2025 +0000
+
+    [skip lovable] Use tech stack vite_react_shadcn_ts_20250728_minor
