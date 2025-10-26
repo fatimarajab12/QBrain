@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useProjects } from "../hooks/useProjects";
 import ProjectCard from "./dashboard/ProjectCard";
 import CreateProjectDialog from "./dashboard/CreateProjectDialog";
-import StatsGrid from "./dashboard/StatsGrid";
 import EmptyState from "./dashboard/EmptyState";
 
 const Dashboard = () => {
@@ -37,7 +36,6 @@ const Dashboard = () => {
       </div>
 
       {/* Statistics */}
-      {projects.length > 0 && <StatsGrid projects={projects} />}
 
       {/* Projects List */}
       <div className="space-y-4">

@@ -8,6 +8,8 @@ export const useFeatures = (projectId?: string) => {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [hasAIGeneratedFeatures, setHasAIGeneratedFeatures] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -21,6 +23,12 @@ export const useFeatures = (projectId?: string) => {
       setIsLoading(true);
       const featuresData = await featureService.fetchFeatures(projectId);
       setFeatures(featuresData);
+      
+      // Check if any features were AI-generated
+      const hasAIFeatures = featuresData.some(feature => 
+        feature.name.includes('AI Generated') || feature.description.includes('AI Generated')
+      );
+      setHasAIGeneratedFeatures(hasAIFeatures);
     } catch (error) {
       console.error('Error fetching features:', error);
       toast({
@@ -82,12 +90,90 @@ export const useFeatures = (projectId?: string) => {
     }
   };
 
+  // Helper function for text extraction (simplified version)
+  const extractTextFromFile = async (file: File): Promise<string> => {
+    // This is a simplified version - in production you'd use proper libraries
+    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+      return await file.text();
+    }
+    // For other file types, you'd need proper extraction logic
+    return "File content extraction placeholder - please paste your requirements text directly for now.";
+  };
+
+  const generateFeaturesFromAI = async (file: File, extractedText?: string) => {
+    if (!projectId) {
+      toast({
+        title: "Error",
+        description: "Project ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    try {
+      // Use extracted text if available, otherwise extract from file
+      let requirementsText = extractedText;
+      
+      if (!requirementsText) {
+        toast({
+          title: "Extracting Text",
+          description: "Extracting text from document...",
+        });
+        requirementsText = await extractTextFromFile(file);
+      }
+
+      // Step 1: Analyze requirements with AI
+      toast({
+        title: "Analyzing Requirements",
+        description: "AI is analyzing your requirements...",
+      });
+
+      const analysisResult = await featureService.analyzeRequirements(requirementsText);
+      
+      // Step 2: Create features from AI analysis
+      toast({
+        title: "Creating Features",
+        description: "Generating features and test cases...",
+      });
+
+      const createdFeatures = await featureService.createAIFeatures(
+        parseInt(projectId), 
+        analysisResult.features
+      );
+
+      // Step 3: Update state
+      setFeatures(prev => [...prev, ...createdFeatures]);
+      setHasAIGeneratedFeatures(true);
+
+      toast({
+        title: "Success!",
+        description: `Generated ${createdFeatures.length} features with AI`,
+      });
+
+      return createdFeatures;
+    } catch (error) {
+      console.error('Error generating features with AI:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate features from requirements",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
   return {
     features,
     isLoading,
     isCreating,
+    isGeneratingAI,
+    hasAIGeneratedFeatures,
     fetchFeatures,
     createFeature,
     updateFeatureStatus,
+    generateFeaturesFromAI,
   };
 };

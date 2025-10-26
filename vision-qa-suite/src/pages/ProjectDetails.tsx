@@ -1,12 +1,13 @@
 // pages/ProjectDetails.tsx
 import { Link } from "react-router-dom";
-import { ArrowLeft, Loader2, Plus } from "lucide-react"; // أضف Plus هنا
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
 import { useFeatures } from "../hooks/useFeatures";
 import FeatureCard from "./project-details/FeatureCard";
 import CreateFeatureDialog from "./project-details/CreateFeatureDialog";
 import EmptyState from "./project-details/EmptyState";
+import AIGenerationDialog from "./project-details/AIGenerationDialog";
 
 const ProjectDetails = () => {
   const { projectId } = useParams();
@@ -16,11 +17,19 @@ const ProjectDetails = () => {
     isCreating,
     createFeature,
     updateFeatureStatus,
+    generateFeaturesFromAI,
+    isGeneratingAI,
+    hasAIGeneratedFeatures
   } = useFeatures(projectId);
 
   const handleCreateFeature = async (featureData: { name: string; description: string }) => {
     await createFeature(featureData);
   };
+
+ // In ProjectDetails.tsx - Update the handleAIGenerate function
+const handleAIGenerate = async (file: File, extractedText?: string) => {
+  await generateFeaturesFromAI(file, extractedText);
+};
 
   if (isLoading) {
     return (
@@ -65,17 +74,26 @@ const ProjectDetails = () => {
             <h1 className="text-3xl font-bold mb-2">Project Features</h1>
             <p className="text-muted-foreground">Manage features and generate test cases</p>
           </div>
-          <CreateFeatureDialog 
-            isCreating={isCreating}
-            onCreate={handleCreateFeature}
-          />
+          <div className="flex gap-2">
+            {!hasAIGeneratedFeatures && (
+              <AIGenerationDialog 
+                onGenerate={handleAIGenerate}
+                isGenerating={isGeneratingAI}
+              />
+            )}
+            <CreateFeatureDialog 
+              isCreating={isCreating}
+              onCreate={handleCreateFeature}
+            />
+          </div>
         </div>
       </div>
 
       {/* Features Grid */}
       {features.length === 0 ? (
         <EmptyState 
-          onCreateFeature={() => document.querySelector<HTMLButtonElement>('[data-testid="create-feature-trigger"]')?.click()} 
+          onCreateFeature={() => document.querySelector<HTMLButtonElement>('[data-testid="create-feature-trigger"]')?.click()}
+          onGenerateWithAI={() => document.querySelector<HTMLButtonElement>('[data-testid="ai-generate-trigger"]')?.click()}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

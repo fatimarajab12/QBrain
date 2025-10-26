@@ -1,6 +1,5 @@
 // pages/project-details/FeatureCard.tsx
 import { Link } from "react-router-dom";
-import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -44,19 +43,11 @@ const FeatureCard = ({ feature, projectId, onStatusChange }: FeatureCardProps) =
           </div>
           <Progress value={feature.progress} />
         </div>
-        <div className="flex gap-2">
-          <Link to={`/projects/${projectId}/features/${feature.id}`} className="flex-1">
-            <Button variant="outline" className="w-full">
-              View Tests
-            </Button>
-          </Link>
-          <Link to={`/test-generator?featureId=${feature.id}`} className="flex-1">
-            <Button className="w-full gradient-primary">
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate
-            </Button>
-          </Link>
-        </div>
+        <Link to={`/projects/${projectId}/features/${feature.id}`} className="flex-1">
+          <Button variant="outline" className="w-full">
+            View Details
+          </Button>
+        </Link>
       </CardContent>
     </Card>
   );
