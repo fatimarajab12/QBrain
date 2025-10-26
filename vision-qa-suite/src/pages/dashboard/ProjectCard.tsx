@@ -37,13 +37,7 @@ const ProjectCard = ({ project }: ProjectCardProps) => {
               <div className="text-xs text-muted-foreground">Bugs</div>
             </div>
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">{project.progress}%</span>
-            </div>
-            <Progress value={project.progress} />
-          </div>
+          
         </CardContent>
       </Card>
     </Link>

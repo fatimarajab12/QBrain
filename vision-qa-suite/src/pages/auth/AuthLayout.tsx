@@ -82,5 +82,4 @@ const AuthLayout = ({ children, title, description }: AuthLayoutProps) => {
     </div>
   );
 };
-
 export default AuthLayout;

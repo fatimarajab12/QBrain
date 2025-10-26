@@ -1,0 +1,77 @@
+{
+  "name": "qbrain-backend",
+  "version": "1.0.0",
+  "description": "QBrain Backend - AI-Powered QA Testing Platform with Smart Test Case Generation",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "prod": "NODE_ENV=production node server.js",
+    "test": "jest --verbose",
+    "test:watch": "jest --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "ai:train": "node scripts/train-models.js",
+    "ai:test": "node scripts/test-ai-services.js",
+    "db:seed": "node scripts/seed-database.js",
+    "db:migrate": "node scripts/migrate-database.js"
+  },
+  "keywords": [
+    "qa",
+    "testing",
+    "ai",
+    "test-cases",
+    "automation",
+    "gherkin",
+    "vertex-ai",
+    "openai"
+  ],
+  "author": "QBrain Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0",
+    "mongoose": "^8.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.10",
+    "validator": "^13.15.15",
+    
+    "openai": "^4.0.0",
+    "@google-cloud/vertexai": "^1.0.0",
+    "@google-cloud/bigquery": "^7.0.0",
+    
+    "multer": "^1.4.5",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.6.0",
+    
+    "axios": "^1.6.0",
+    "helmet": "^7.1.0",
+    "compression": "^1.7.4",
+    "rate-limiter-flexible": "^4.2.0",
+    "winston": "^3.11.0",
+    "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "prettier": "^3.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/qbrain-backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/qbrain-backend/issues"
+  },
+  "homepage": "https://github.com/your-username/qbrain-backend#readme"
+}
