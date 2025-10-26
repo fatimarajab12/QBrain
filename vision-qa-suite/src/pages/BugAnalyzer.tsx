@@ -182,34 +182,8 @@ const BugAnalyzer = () => {
               </CardContent>
             </Card>
 
-            <Card className="shadow-soft border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-accent" />
-                  Suggested Fix
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">{analysis.suggestedFix}</p>
-                
-                <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-border">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Estimated Time</Label>
-                    <p className="text-sm font-medium mt-1">{analysis.estimatedTime}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Affected Areas</Label>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {analysis.affectedAreas.map((area: string, index: number) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {area}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            
+            
           </div>
         )}
       </div>
