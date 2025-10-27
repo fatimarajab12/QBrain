@@ -18,6 +18,7 @@ export const useTestCases = (featureId?: number) => {
     }
   }, [featureId]);
 
+  // Fix: Accept number parameter instead of string
   const fetchTestCases = async (featureId: number) => {
     try {
       setIsLoading(true);
@@ -37,13 +38,13 @@ export const useTestCases = (featureId?: number) => {
 
   const createTestCase = async (testCaseData: Omit<TestCase, 'id'>) => {
     if (!featureId) return;
-
+    
     setIsCreating(true);
     try {
       const testCaseToAdd = await testCaseService.createTestCase({
         ...testCaseData,
-        featureId,
-        projectId: undefined // Will be set by backend
+        featureId: featureId, // No need for parseInt since featureId is already number
+        projectId: undefined
       });
 
       setTestCases(prev => [...prev, testCaseToAdd]);

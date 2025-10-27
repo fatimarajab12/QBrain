@@ -5,6 +5,7 @@ import { TestCase } from '@/types/test-case';
 const mockTestCases: TestCase[] = [
   {
     id: 1,
+    featureId: 1,
     title: "Verify login with valid credentials",
     priority: "high",
     status: "passed",
@@ -21,6 +22,7 @@ const mockTestCases: TestCase[] = [
   },
   {
     id: 2,
+    featureId: 1,
     title: "Verify login with invalid password",
     priority: "high",
     status: "failed",
@@ -37,6 +39,7 @@ const mockTestCases: TestCase[] = [
   },
   {
     id: 3,
+    featureId: 1,
     title: "Verify empty field validation",
     priority: "medium",
     status: "pending",
@@ -54,34 +57,33 @@ const mockTestCases: TestCase[] = [
 ];
 
 export const testCaseService = {
-  // TODO: Replace with real API when backend is ready
   async fetchTestCases(featureId: number): Promise<TestCase[]> {
-    // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1200));
-    return mockTestCases.filter(tc => tc.featureId === featureId).length > 0 
+    return mockTestCases.filter(tc => tc.featureId === featureId).length > 0
       ? mockTestCases.filter(tc => tc.featureId === featureId)
       : mockTestCases.map(tc => ({ ...tc, featureId }));
   },
 
-  // TODO: Replace with real API when backend is ready
   async createTestCase(testCaseData: Omit<TestCase, 'id'>): Promise<TestCase> {
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
+    const newId = mockTestCases.length > 0
+      ? Math.max(...mockTestCases.map(tc => tc.id)) + 1
+      : 1;
+
     const testCaseToAdd: TestCase = {
       ...testCaseData,
-      id: Math.max(...mockTestCases.map(tc => tc.id), 0) + 1
+      id: newId,
+      featureId: testCaseData.featureId, // مهم للتوافق
     };
 
     mockTestCases.push(testCaseToAdd);
     return testCaseToAdd;
   },
 
-  // TODO: Replace with real API when backend is ready
   async updateTestCase(testCaseId: number, testCaseData: Partial<TestCase>): Promise<TestCase> {
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 600));
-    
+
     const index = mockTestCases.findIndex(tc => tc.id === testCaseId);
     if (index !== -1) {
       mockTestCases[index] = { ...mockTestCases[index], ...testCaseData };
@@ -90,20 +92,16 @@ export const testCaseService = {
     throw new Error('Test case not found');
   },
 
-  // TODO: Replace with real API when backend is ready
   async deleteTestCase(testCaseId: number): Promise<void> {
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     const index = mockTestCases.findIndex(tc => tc.id === testCaseId);
     if (index !== -1) {
       mockTestCases.splice(index, 1);
     }
   },
 
-  // TODO: Replace with real API when backend is ready
   async updateTestCaseStatus(testCaseId: number, status: "passed" | "failed"): Promise<TestCase> {
-    // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const index = mockTestCases.findIndex(tc => tc.id === testCaseId);
@@ -111,9 +109,9 @@ export const testCaseService = {
       mockTestCases[index] = {
         ...mockTestCases[index],
         status,
-        actualResult: status === "passed" 
-          ? mockTestCases[index].expectedResult 
-          : "Test failed - unexpected behavior"
+        actualResult: status === "passed"
+          ? mockTestCases[index].expectedResult
+          : mockTestCases[index].actualResult || "Test failed - unexpected behavior",
       };
       return mockTestCases[index];
     }

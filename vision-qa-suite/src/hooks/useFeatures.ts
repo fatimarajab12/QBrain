@@ -14,17 +14,20 @@ export const useFeatures = (projectId?: string) => {
 
   useEffect(() => {
     if (projectId) {
-      fetchFeatures(parseInt(projectId));
+      fetchFeatures(projectId); 
     }
   }, [projectId]);
 
-  const fetchFeatures = async (projectId: number) => {
+  // fetch data from server 
+  const fetchFeatures = async (projectId: string) => {
     try {
       setIsLoading(true);
-      const featuresData = await featureService.fetchFeatures(projectId);
+      const featuresData = await featureService.fetchFeatures(parseInt(projectId));
+      //state to save data 
       setFeatures(featuresData);
       
-      // Check if any features were AI-generated
+      //
+      
       const hasAIFeatures = featuresData.some(feature => 
         feature.name.includes('AI Generated') || feature.description.includes('AI Generated')
       );
@@ -43,7 +46,7 @@ export const useFeatures = (projectId?: string) => {
 
   const createFeature = async (featureData: { name: string; description: string }) => {
     if (!projectId) return;
-
+    
     setIsCreating(true);
     try {
       const createdFeature = await featureService.createFeature(parseInt(projectId), featureData);

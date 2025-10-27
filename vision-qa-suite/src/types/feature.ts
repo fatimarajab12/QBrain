@@ -1,4 +1,3 @@
-// types/feature.ts
 export interface Feature {
   id: number;
   name: string;
@@ -7,7 +6,8 @@ export interface Feature {
   bugsCount: number;
   status: "completed" | "in-progress" | "pending";
   progress: number;
-  projectId?: number;
+  projectId: number; 
   createdAt?: string;
   updatedAt?: string;
+  isAIGenerated?: boolean;
 }

@@ -1,4 +1,3 @@
-// types/project.ts
 export interface Project {
   id: number;
   name: string;
@@ -7,5 +6,5 @@ export interface Project {
   testCasesCount: number;
   bugsCount: number;
   progress: number;
-  lastUpdated: string;
+  lastUpdated: string; // أو lastUpdatedAt?: string;
 }

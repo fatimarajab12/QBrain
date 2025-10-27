@@ -9,8 +9,9 @@ export interface TestCase {
   expectedResult: string;
   actualResult: string;
   bugReports: number[];
-  featureId?: number;
+  featureId: number; 
   projectId?: number;
   createdAt?: string;
   updatedAt?: string;
 }
+

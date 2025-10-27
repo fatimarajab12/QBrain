@@ -11,6 +11,8 @@ const mockFeatures: Feature[] = [
     bugsCount: 2,
     status: "in-progress",
     progress: 75,
+    projectId: 1,         // added
+    isAIGenerated: false, // optional
   },
   {
     id: 2,
@@ -20,6 +22,8 @@ const mockFeatures: Feature[] = [
     bugsCount: 0,
     status: "completed",
     progress: 100,
+    projectId: 1,         // added
+    isAIGenerated: false,
   },
   {
     id: 3,
@@ -29,8 +33,11 @@ const mockFeatures: Feature[] = [
     bugsCount: 3,
     status: "in-progress",
     progress: 60,
+    projectId: 1,         // added
+    isAIGenerated: false,
   },
 ];
+
 
 export const featureService = {
   // TODO: Replace with real API when backend is ready
@@ -191,54 +198,40 @@ export const featureService = {
   },
 
   // TODO: Replace with real API when backend is ready  
-  async createAIFeatures(projectId: number, features: Array<{
-    name: string;
-    description: string;
-    testCases: Array<{
-      title: string;
-      steps: string[];
-      expectedResult: string;
-    }>;
-  }>): Promise<Feature[]> {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+ async createAIFeatures(projectId: number, features: Array<{
+  name: string;
+  description: string;
+  testCases: Array<{
+    title: string;
+    steps: string[];
+    expectedResult: string;
+  }>;
+}>): Promise<Feature[]> {
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  const createdFeatures: Feature[] = [];
+  let nextId = Math.max(...mockFeatures.map(f => f.id), 0) + 1;
+  
+  features.forEach(featureData => {
+    const newFeature: Feature = {
+      id: nextId++,
+      name: featureData.name,
+      description: featureData.description,
+      testCasesCount: featureData.testCases.length,
+      bugsCount: 0,
+      status: "pending",
+      progress: 0,
+      projectId,
+      isAIGenerated: true, // ✅ نميزها كمولدة بالذكاء الاصطناعي
+    };
     
-    // Create features with their test cases
-    // Actual API should be: POST /api/projects/{projectId}/ai-features { features: [...] }
-    const createdFeatures: Feature[] = [];
-    let nextId = Math.max(...mockFeatures.map(f => f.id), 0) + 1;
-    
-    features.forEach(featureData => {
-      const newFeature: Feature = {
-        id: nextId++,
-        name: featureData.name,
-        description: featureData.description,
-        testCasesCount: featureData.testCases.length,
-        bugsCount: 0,
-        status: "pending",
-        progress: 0,
-        projectId,
-      };
-      
-      mockFeatures.push(newFeature);
-      createdFeatures.push(newFeature);
-      
-      // TODO: Create test cases using testCaseService
-      // featureData.testCases.forEach(testCaseData => {
-      //   testCaseService.createTestCase({
-      //     ...testCaseData,
-      //     featureId: newFeature.id,
-      //     projectId: projectId,
-      //     priority: "medium",
-      //     status: "pending",
-      //     preconditions: "",
-      //     actualResult: "",
-      //     bugReports: []
-      //   });
-      // });
-    });
-    
-    return createdFeatures;
-  }
+    mockFeatures.push(newFeature);
+    createdFeatures.push(newFeature);
+  });
+  
+  return createdFeatures;
+}
+
 
 };

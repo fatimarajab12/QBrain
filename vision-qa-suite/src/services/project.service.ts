@@ -45,11 +45,12 @@ export const projectService = {
 
   // TODO: Replace with real API when backend is ready
   async createProject(projectData: { name: string; description: string }): Promise<Project> {
-    // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
+    const newId = mockProjects.length > 0 ? Math.max(...mockProjects.map(p => p.id)) + 1 : 1;
+
     const createdProject: Project = {
-      id: Math.max(...mockProjects.map(p => p.id)) + 1,
+      id: newId,
       name: projectData.name,
       description: projectData.description,
       featuresCount: 0,
@@ -61,7 +62,8 @@ export const projectService = {
 
     mockProjects.push(createdProject);
     return createdProject;
-  },
+  }
+  ,
 
   // TODO: Add these functions when backend is ready:
   // async fetchProjectById(id: number): Promise<Project> {
