@@ -17,7 +17,6 @@ const navItems = [
   { title: "Projects", url: "/dashboard", icon: FolderKanban },
   { title: "Test Generator", url: "/test-generator", icon: TestTube },
   { title: "Bug Analyzer", url: "/bug-analyzer", icon: Bug },
-  { title: "Reports", url: "/reports", icon: BarChart3 },
   { title: "Profile", url: "/profile", icon: User },
 ];
 

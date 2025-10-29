@@ -80,8 +80,6 @@ const BugsTab = ({ bugs, features, onAddBug }: BugsTabProps) => {
                 <TableHead>Title</TableHead>
                 <TableHead>Feature</TableHead>
                 <TableHead>Severity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Updated</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -95,14 +93,7 @@ const BugsTab = ({ bugs, features, onAddBug }: BugsTabProps) => {
                       {bug.severity}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(bug.status)}>
-                      {bug.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(bug.updated_at).toLocaleDateString()}
-                  </TableCell>
+                 
                 </TableRow>
               ))}
             </TableBody>

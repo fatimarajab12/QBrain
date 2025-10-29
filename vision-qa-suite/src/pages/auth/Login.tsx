@@ -149,20 +149,7 @@ const Login = ({ onSwitchToSignup }: LoginProps) => {
         </div>
 
         {/* Demo credentials button */}
-        <div className="pt-4 border-t">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={handleDemoLogin}
-            disabled={isLoading}
-          >
-            Try Demo Account
-          </Button>
-          <p className="text-xs text-muted-foreground text-center mt-2">
-            demo@qa.com / demo123
-          </p>
-        </div>
+        
 
         {/* Switch to signup */}
         <div className="text-center text-sm text-muted-foreground">

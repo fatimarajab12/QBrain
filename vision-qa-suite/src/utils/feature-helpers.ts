@@ -3,10 +3,14 @@ import { Feature } from '@/types/feature';
 
 export const getStatusColor = (status: string) => {
   switch (status) {
-    case "completed": return "bg-success/10 text-success border-success/20";
-    case "in-progress": return "bg-accent/10 text-accent border-accent/20";
-    case "pending": return "bg-muted text-muted-foreground border-muted";
-    default: return "";
+    case "completed": 
+      return "bg-success/15 text-success border-success/30";
+    case "in-progress": 
+      return "bg-accent/15 text-accent border-accent/30";
+    case "pending": 
+      return "bg-orange-500/15 text-orange-500 border-orange-500/30";
+    default: 
+      return "bg-muted/50 text-muted-foreground border-muted";
   }
 };
 
