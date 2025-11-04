@@ -1,73 +1,105 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+  {
     name: {
-        type: String,
-        required: [true, 'Name is required'],
-        trim: true,
-        minlength: [2, 'Name must be at least 2 characters long'],
-        maxlength: [50, 'Name cannot exceed 50 characters']
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+      minlength: [2, "Name must be at least 2 characters long"],
+      maxlength: [50, "Name cannot exceed 50 characters"],
     },
     email: {
-        type: String,
-        required: [true, 'Email is required'],
-        unique: true,
-        lowercase: true,
-        trim: true, // Fixed the typo from 'trime'
-        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [
+        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        "Please enter a valid email",
+      ],
     },
     password: {
-        type: String,
-        required: [true, 'Password is required'],
-        minlength: [6, 'Password must be at least 6 characters']
+      type: String,
+      required: [true, "Password is required"],
+      minlength: [6, "Password must be at least 6 characters"],
     },
     avatar: {
-        type: String,
-        default: ''
+      type: String,
+      default: "",
     },
-    // TODO: Add account verification fields
     isVerified: {
-        type: Boolean,
-        default: false
+      type: Boolean,
+      default: false,
     },
     isActive: {
-        type: Boolean,
-        default: true
+      type: Boolean,
+      default: true,
     },
     lastLogin: {
-        type: Date
+      type: Date,
     },
     loginCount: {
-        type: Number,
-        default: 0
+      type: Number,
+      default: 0,
     },
-    // TODO: Add email verification fields (for email confirmation)
     emailVerificationToken: String,
     emailVerificationExpires: Date,
-    // TODO: Add password reset fields (for forgot password)
     passwordResetToken: String,
-    passwordResetExpires: Date
-}, {
-    timestamps: true // Automatically adds createdAt and updatedAt
+    passwordResetExpires: Date,
+  },
+  {
+    timestamps: true,
+  }
+);
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
 });
 
-// TODO: Add email verification token method
-// TODO: Add password reset token method
-
-// TODO: Add password hashing (before saving)
-
-
-// TODO: Add password comparison method
-
-
-userSchema.methods.toJSON = function() {
-    const user = this.toObject();
-    delete user.password;
-    delete user.emailVerificationToken;
-    delete user.passwordResetToken;
-    return user;
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+userSchema.methods.generateEmailVerificationToken = function () {
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+  
+  this.emailVerificationToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
+    
+  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  
+  return verificationToken;
+};
+
+// Generate password reset token
+userSchema.methods.generatePasswordResetToken = function () {
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+    
+  this.passwordResetExpires = Date.now() + 30 * 60 * 1000; // 30 minutes
+  
+  return resetToken;
+};
+
+// Remove sensitive fields from JSON output
+userSchema.methods.toJSON = function () {
+  const user = this.toObject();
+  delete user.password;
+  delete user.emailVerificationToken;
+  delete user.passwordResetToken;
+  return user;
+};
+
+export const User = mongoose.model("User", userSchema);
