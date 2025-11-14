@@ -59,23 +59,26 @@ class EmailService {
       userName: name
     });
   }
+async sendPasswordResetCode(email, code, name) {
+  return await this.sendTemplateEmail(email, EmailTemplates.RESET_CODE, {
+    userName: name,
+    code
+  });
+}
 
-  async sendPasswordResetEmail(email, name, resetToken) {
-    const resetLink = `${process.env.APP_URL}/api/auth/reset-password?token=${resetToken}`;
-    
-    return await this.sendTemplateEmail(email, EmailTemplates.PASSWORD_RESET, {
-      userName: name,
-      resetLink,
-      resetToken
-    });
-  }
-
+ 
   generateTextVersion(html) {
     return html
       .replace(/<[^>]*>/g, '')
       .replace(/\n\s*\n/g, '\n')
       .trim();
   }
+async sendPasswordResetCode(email, code, name) {
+  return await this.sendTemplateEmail(email, EmailTemplates.RESET_CODE, {
+    userName: name,
+    code
+  });
+}
 
   handleEmailError(error) {
     if (error.code === 'EAUTH') {

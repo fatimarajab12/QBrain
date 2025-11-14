@@ -167,8 +167,36 @@ export const Signin = async (req, res) => {
 
 export const forgetPassword = async (req, res) => {
   const { email } = req.body;
-  const code = customAlphabet('1234567890', 4) ();
-  return res.status(200).json( code );
 
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
 
+    const code = customAlphabet("1234567890", 4)();
+
+    const result = await emailService.sendPasswordResetCode(
+      user.email,
+      code,
+      user.name
+    );
+
+    return res.status(200).json({
+      success: true,
+      emailStatus: result,
+      testCode: code       
+    });
+
+  } catch (err) {
+    console.error("ForgetPassword test error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message
+    });
+  }
 };
