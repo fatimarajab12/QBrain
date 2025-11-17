@@ -27,18 +27,12 @@ const userSchema = new mongoose.Schema(
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters"],
     },
-    avatar: {
-      type: String,
-      default: "",
-    },
+   
     isVerified: {
       type: Boolean,
       default: false,
     },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
+   
     lastLogin: {
       type: Date,
     },
@@ -79,7 +73,6 @@ userSchema.methods.generateEmailVerificationToken = function () {
   return verificationToken;
 };
 
-// Generate password reset token
 userSchema.methods.generatePasswordResetToken = function () {
   const resetToken = crypto.randomBytes(32).toString("hex");
   
@@ -93,7 +86,6 @@ userSchema.methods.generatePasswordResetToken = function () {
   return resetToken;
 };
 
-// Remove sensitive fields from JSON output
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;

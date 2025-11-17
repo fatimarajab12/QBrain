@@ -4,6 +4,8 @@ import {
   verifyEmail,
   Signin,
   forgetPassword,
+  resetPassword,
+  deleteUserByEmail,
  
 } from "../controllers/auth.controller.js";
 
@@ -13,8 +15,7 @@ authRouter.post("/sign-up", Signup);
 authRouter.get("/verify-email", verifyEmail);
 authRouter.post("/sign-in", Signin);
 authRouter.post("/forget-password", forgetPassword);
-// authRouter.post("/reset-password", resetPassword);
-// authRouter.post("/resend-verification", resendVerification);
-// authRouter.post("/logout", Logout);
+authRouter.post("/reset-password", resetPassword);
+authRouter.post("/delete-user", deleteUserByEmail);
 
 export default authRouter;

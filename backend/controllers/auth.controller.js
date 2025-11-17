@@ -168,35 +168,101 @@ export const Signin = async (req, res) => {
 export const forgetPassword = async (req, res) => {
   const { email } = req.body;
 
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Email is required" });
+  }
+
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const code = customAlphabet("1234567890", 4)();
+    // توليد كود 4 أرقام كـ string مع الحفاظ على leading zeros
+    const code = customAlphabet("0123456789", 4)();
 
-    const result = await emailService.sendPasswordResetCode(
-      user.email,
-      code,
-      user.name
-    );
+    // تخزين الكود hashed في DB مع صلاحية 10 دقائق
+    const hashedCode = crypto.createHash("sha256").update(code).digest("hex");
+    user.passwordResetToken = hashedCode;
+    user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 دقائق
+    await user.save();
+
+    // إرسال البريد
+    const result = await emailService.sendPasswordResetCode(user.email, code, user.name);
 
     return res.status(200).json({
       success: true,
       emailStatus: result,
-      testCode: code       
+      testCode: code, // فقط للتطوير
     });
-
   } catch (err) {
-    console.error("ForgetPassword test error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: err.message
-    });
+    console.error("ForgetPassword error:", err);
+    return res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  const { email, code, newPassword, confirmPassword } = req.body;
+
+  if (!email || !code || !newPassword || !confirmPassword) {
+    return res.status(400).json({ success: false, message: "All fields are required" });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ success: false, message: "Passwords do not match" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const codeString = code.toString().padStart(4, "0");
+    const hashedCode = crypto.createHash("sha256").update(codeString).digest("hex");
+
+    if (!user.passwordResetToken || user.passwordResetToken !== hashedCode || user.passwordResetExpires < Date.now()) {
+      return res.status(400).json({ success: false, message: "Invalid or expired reset code" });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 12);
+
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+
+    await user.save();
+
+    return res.status(200).json({ success: true, message: "Password reset successfully" });
+  } catch (err) {
+    console.error("ResetPassword error:", err);
+    return res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
+};
+export const Logout = (req, res) => {
+  res.clearCookie("token");
+  res.status(200).json({ success: true, message: "Logged out successfully" });
+};
+
+
+
+
+export const deleteUserByEmail = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Email is required" });
+  }
+
+  try {
+    const user = await User.findOneAndDelete({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({ success: true, message: "User deleted successfully" });
+  } catch (err) {
+    console.error("DeleteUserByEmail error:", err);
+    return res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };

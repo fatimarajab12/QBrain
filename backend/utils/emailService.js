@@ -38,8 +38,6 @@ class EmailService {
       };
     } catch (error) {
       console.error(`Failed to send email (${templateType}) to ${to}:`, error);
-      
-      // Implement retry logic or fallback here
       throw this.handleEmailError(error);
     }
   }
@@ -59,26 +57,20 @@ class EmailService {
       userName: name
     });
   }
-async sendPasswordResetCode(email, code, name) {
-  return await this.sendTemplateEmail(email, EmailTemplates.RESET_CODE, {
-    userName: name,
-    code
-  });
-}
 
- 
+  async sendPasswordResetCode(email, code, name) {
+    return await this.sendTemplateEmail(email, EmailTemplates.RESET_CODE, {
+      userName: name,
+      code
+    });
+  }
+
   generateTextVersion(html) {
     return html
       .replace(/<[^>]*>/g, '')
       .replace(/\n\s*\n/g, '\n')
       .trim();
   }
-async sendPasswordResetCode(email, code, name) {
-  return await this.sendTemplateEmail(email, EmailTemplates.RESET_CODE, {
-    userName: name,
-    code
-  });
-}
 
   handleEmailError(error) {
     if (error.code === 'EAUTH') {
