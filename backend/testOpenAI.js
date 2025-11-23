@@ -41,10 +41,8 @@ app.post("/summarize-pdf", upload.single("file"), async (req, res) => {
       pdfParser.loadPDF(req.file.path);
     });
 
-    // Remove the uploaded PDF file
     fs.unlinkSync(req.file.path);
 
-    // Send text to OpenAI for summarization
     const prompt = `
       Please summarize the following text concisely and clearly:
       
@@ -57,7 +55,7 @@ app.post("/summarize-pdf", upload.single("file"), async (req, res) => {
         { role: "system", content: "You are a helpful assistant who summarizes PDF documents." },
         { role: "user", content: prompt },
       ],
-      max_tokens: 500, // Adjust as needed
+      max_tokens: 500, 
     });
 
     const summary = response.choices[0].message.content;
