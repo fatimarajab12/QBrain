@@ -233,5 +233,4 @@ export const featureService = {
   return createdFeatures;
 }
 
-
 };
