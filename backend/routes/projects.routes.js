@@ -19,11 +19,10 @@ router.get("/:id/stats", projectsController.getProjectStats);
 
 // Upload and process SRS document
 router.post(
-  "/:id/upload-srs",
-  projectsController.upload.single("srs"),
+  "/:id/upload-srs", 
+  projectsController.upload.single("srs"), 
   projectsController.uploadSRS
 );
-
 // Get project by ID
 router.get("/:id", projectsController.getProject);
 

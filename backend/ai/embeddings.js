@@ -1,76 +1,80 @@
-// OpenAI Embeddings helper
-import OpenAI from "openai";
+// ai/embeddings.js
+import { OpenAIEmbeddings } from "@langchain/openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let embeddingsInstance = null;
+
+function getEmbeddingsInstance(model = "text-embedding-3-small") {
+  if (!embeddingsInstance) {
+    embeddingsInstance = new OpenAIEmbeddings({
+      model,
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return embeddingsInstance;
+}
 
 /**
- * Generate embeddings for a single text
- * @param {string} text - Text to embed
- * @param {string} model - Embedding model (default: text-embedding-ada-002)
- * @returns {Promise<Array<number>>} Embedding vector
+ * Generate embedding for a single text with retry
  */
-export async function generateEmbedding(text, model = "text-embedding-ada-002") {
-  try {
-    if (!text || typeof text !== "string" || text.trim().length === 0) {
-      throw new Error("Text must be a non-empty string");
+export async function generateEmbedding(text, model = "text-embedding-3-small") {
+  if (!text || typeof text !== "string" || text.trim().length === 0)
+    throw new Error("Text must be a non-empty string");
+
+  const embeddings = getEmbeddingsInstance(model);
+
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      return await embeddings.embedQuery(text.trim());
+    } catch (error) {
+      attempts++;
+      console.warn(`Embedding attempt ${attempts} failed: ${error.message}`);
+      if (attempts === 3) throw error;
+      await new Promise(res => setTimeout(res, 500 * attempts));
     }
-
-    const response = await openai.embeddings.create({
-      model,
-      input: text.trim(),
-    });
-
-    return response.data[0].embedding;
-  } catch (error) {
-    console.error("Error generating embedding:", error);
-    throw error;
   }
 }
 
 /**
  * Generate embeddings for multiple texts (batch)
- * @param {Array<string>} texts - Array of texts to embed
- * @param {string} model - Embedding model
- * @returns {Promise<Array<Array<number>>>} Array of embedding vectors
  */
-export async function generateEmbeddingsBatch(texts, model = "text-embedding-ada-002") {
-  try {
-    if (!Array.isArray(texts) || texts.length === 0) {
-      throw new Error("Texts must be a non-empty array");
+export async function generateEmbeddingsBatch(texts, model = "text-embedding-3-small") {
+  if (!Array.isArray(texts) || texts.length === 0)
+    throw new Error("Texts must be a non-empty array");
+
+  const validTexts = texts.filter(t => t && typeof t === "string" && t.trim().length > 0);
+  if (!validTexts.length) throw new Error("No valid texts to embed");
+
+  const embeddings = getEmbeddingsInstance(model);
+
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      return await embeddings.embedDocuments(validTexts);
+    } catch (error) {
+      attempts++;
+      console.warn(`Batch embedding attempt ${attempts} failed: ${error.message}`);
+      if (attempts === 3) throw error;
+      await new Promise(res => setTimeout(res, 500 * attempts));
     }
-
-    // Filter out empty texts
-    const validTexts = texts.filter((text) => text && typeof text === "string" && text.trim().length > 0);
-
-    if (validTexts.length === 0) {
-      throw new Error("No valid texts to embed");
-    }
-
-    const response = await openai.embeddings.create({
-      model,
-      input: validTexts,
-    });
-
-    return response.data.map((item) => item.embedding);
-  } catch (error) {
-    console.error("Error generating embeddings batch:", error);
-    throw error;
   }
 }
 
 /**
  * Get embedding model dimensions
- * @param {string} model - Model name
- * @returns {number} Dimension count
  */
-export function getEmbeddingDimensions(model = "text-embedding-ada-002") {
-  const dimensions = {
-    "text-embedding-ada-002": 1536,
+export function getEmbeddingDimensions(model = "text-embedding-3-small") {
+  const dims = {
     "text-embedding-3-small": 1536,
     "text-embedding-3-large": 3072,
+    "text-embedding-ada-002": 1536,
   };
-  return dimensions[model] || 1536;
+  return dims[model] || 1536;
 }
 
+/**
+ * Return embeddings instance (for vectorStore)
+ */
+export function getEmbeddings(model = "text-embedding-3-small") {
+  return getEmbeddingsInstance(model);
+}

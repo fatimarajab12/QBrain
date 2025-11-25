@@ -194,8 +194,12 @@ export const deleteProject = async (req, res) => {
  * POST /api/projects/:id/upload-srs
  */
 export const uploadSRS = async (req, res) => {
+  
   try {
     const { id } = req.params;
+    console.log("Upload Request Received for Project ID:", id);
+    console.log("File Object:", req.file);
+    console.log("Body Object:", req.body);
 
     if (!req.file) {
       return res.status(400).json({

@@ -1,11 +1,15 @@
-// RAG (Retrieval Augmented Generation) Service
-import { vectorDB } from "../vector/vectorDB.js";
-import { generateEmbedding } from "./embeddings.js";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// RAG Service with LangChain v0.3.0
+import { vectorStore } from "../vector/vectorStore.js";
+import { ChatOpenAI } from "@langchain/openai";
+import { createRetrievalChain } from "langchain/chains/retrieval";
+import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+import {
+  ChatPromptTemplate,
+  SystemMessagePromptTemplate,
+  HumanMessagePromptTemplate,
+  PromptTemplate,
+} from "@langchain/core/prompts";
+import { getEmbeddings } from "./embeddings.js";
 
 /**
  * Query RAG system: search vector DB + generate AI response
@@ -16,37 +20,55 @@ const openai = new OpenAI({
  */
 export async function queryRAG(projectId, question, nResults = 5) {
   try {
-    // Step 1: Search for similar chunks in Vector DB
-    const similarChunks = await vectorDB.searchSimilar(projectId, question, nResults);
+    // Get retriever
+    const retriever = await vectorStore.getRetriever(projectId, nResults);
 
-    if (!similarChunks || similarChunks.length === 0) {
+    if (!retriever) {
       return "No relevant information found in the project knowledge base.";
     }
 
-    // Step 2: Build context from retrieved chunks
-    const context = similarChunks
-      .map((chunk, index) => `[Context ${index + 1}]\n${chunk.document}`)
-      .join("\n\n");
-
-    // Step 3: Generate response using OpenAI with context
-    const response = await openai.chat.completions.create({
+    // Create LLM
+    const llm = new ChatOpenAI({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful AI assistant that answers questions based on the provided context from project documentation. Only use information from the context. If the context doesn't contain relevant information, say so.",
-        },
-        {
-          role: "user",
-          content: `Context from project documentation:\n\n${context}\n\nQuestion: ${question}\n\nAnswer:`,
-        },
-      ],
       temperature: 0.7,
-      max_tokens: 1000,
+      apiKey: process.env.OPENAI_API_KEY,
     });
 
-    return response.choices[0].message.content;
+    // Create prompt template
+    const systemTemplate = `You are a helpful AI assistant that answers questions based on the provided context from project documentation. 
+Only use information from the context provided. If the context doesn't contain relevant information, say so clearly.
+Be concise and professional in your response.
+
+Context from project documentation:
+{context}`;
+
+    const userTemplate = `Question: {question}
+
+Please provide a helpful answer based on the context above.`;
+
+    const chatPrompt = ChatPromptTemplate.fromMessages([
+      SystemMessagePromptTemplate.fromTemplate(systemTemplate),
+      HumanMessagePromptTemplate.fromTemplate(userTemplate),
+    ]);
+
+    // Create the chain
+    const combineDocsChain = await createStuffDocumentsChain({
+      llm,
+      prompt: chatPrompt,
+      documentVariableName: "context",
+    });
+
+    const retrievalChain = await createRetrievalChain({
+      combineDocsChain,
+      retriever,
+    });
+
+    // Execute the chain
+    const result = await retrievalChain.invoke({
+      input: question,
+    });
+
+    return result.output || result.answer || "Unable to generate response";
   } catch (error) {
     console.error("RAG query error:", error);
     throw error;
@@ -62,11 +84,16 @@ export async function queryRAG(projectId, question, nResults = 5) {
  */
 export async function getRAGContext(projectId, query, nResults = 5) {
   try {
-    const similarChunks = await vectorDB.searchSimilar(projectId, query, nResults);
+    const similarChunks = await vectorStore.similaritySearch(
+      projectId,
+      query,
+      nResults
+    );
+
     return similarChunks.map((chunk) => ({
-      text: chunk.document,
+      text: chunk.content,
       metadata: chunk.metadata,
-      relevance: chunk.distance ? 1 - chunk.distance : null,
+      relevance: 1 - chunk.score,
     }));
   } catch (error) {
     console.error("Error getting RAG context:", error);
@@ -84,9 +111,12 @@ export async function generateFeaturesFromRAG(projectId, options = {}) {
   try {
     const { nContextChunks = 10, model = "gpt-4o-mini" } = options;
 
-    // Search for requirements-related chunks
-    const query = "Generate project features and requirements from SRS document";
-    const contextChunks = await getRAGContext(projectId, query, nContextChunks);
+    // Get context
+    const contextChunks = await getRAGContext(
+      projectId,
+      "requirements features specifications",
+      nContextChunks
+    );
 
     if (contextChunks.length === 0) {
       throw new Error("No SRS content found. Please upload SRS document first.");
@@ -94,7 +124,15 @@ export async function generateFeaturesFromRAG(projectId, options = {}) {
 
     const context = contextChunks.map((chunk) => chunk.text).join("\n\n");
 
-    const prompt = `You are a project analyst. Based on the following SRS (Software Requirements Specification) context, generate a comprehensive list of features.
+    // Create LLM
+    const llm = new ChatOpenAI({
+      model: model,
+      temperature: 0.7,
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    // Create prompt
+    const prompt = PromptTemplate.fromTemplate(`You are a project analyst. Based on the following SRS (Software Requirements Specification) context, generate a comprehensive list of features.
 
 For each feature, provide:
 - featureId: unique identifier (format: feature_XXX)
@@ -107,24 +145,15 @@ For each feature, provide:
 Return ONLY a valid JSON array of features, no additional text.
 
 SRS Context:
-${context}
+{context}
 
-Generate features:`;
+Generate features as JSON array:`);
 
-    const response = await openai.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: "system",
-          content: "You are a project analyst. Return only valid JSON arrays, no markdown or explanations.",
-        },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-    });
+    // Execute
+    const formattedPrompt = await prompt.format({ context });
+    const result = await llm.invoke(formattedPrompt);
 
-    const content = response.choices[0].message.content;
+    const content = result.content;
     const parsed = JSON.parse(content);
 
     // Handle both {features: [...]} and [...] formats
@@ -144,16 +173,32 @@ Generate features:`;
  * @param {Object} options - Generation options
  * @returns {Promise<Array>} Generated test cases
  */
-export async function generateTestCasesFromRAG(projectId, featureDescription, options = {}) {
+export async function generateTestCasesFromRAG(
+  projectId,
+  featureDescription,
+  options = {}
+) {
   try {
     const { nContextChunks = 5, model = "gpt-4o-mini" } = options;
 
-    // Search for relevant requirements
-    const contextChunks = await getRAGContext(projectId, featureDescription, nContextChunks);
+    // Get relevant context
+    const contextChunks = await getRAGContext(
+      projectId,
+      featureDescription,
+      nContextChunks
+    );
 
     const context = contextChunks.map((chunk) => chunk.text).join("\n\n");
 
-    const prompt = `You are a QA engineer. Based on the following feature description and project requirements context, generate comprehensive test cases.
+    // Create LLM
+    const llm = new ChatOpenAI({
+      model: model,
+      temperature: 0.7,
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    // Create prompt
+    const prompt = PromptTemplate.fromTemplate(`You are a QA engineer. Based on the following feature description and project requirements context, generate comprehensive test cases.
 
 For each test case, provide:
 - testCaseId: unique identifier (format: test_XXX)
@@ -168,27 +213,21 @@ For each test case, provide:
 Return ONLY a valid JSON array of test cases, no additional text.
 
 Feature Description:
-${featureDescription}
+{featureDescription}
 
 Project Requirements Context:
-${context}
+{context}
 
-Generate test cases:`;
+Generate test cases as JSON array:`);
 
-    const response = await openai.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: "system",
-          content: "You are a QA engineer. Return only valid JSON arrays, no markdown or explanations.",
-        },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.7,
-      response_format: { type: "json_object" },
+    // Execute
+    const formattedPrompt = await prompt.format({
+      featureDescription,
+      context,
     });
+    const result = await llm.invoke(formattedPrompt);
 
-    const content = response.choices[0].message.content;
+    const content = result.content;
     const parsed = JSON.parse(content);
 
     // Handle both {testCases: [...]} and [...] formats
@@ -212,7 +251,15 @@ export async function analyzeBugWithRAG(projectId, bugDescription) {
     const contextChunks = await getRAGContext(projectId, bugDescription, 5);
     const context = contextChunks.map((chunk) => chunk.text).join("\n\n");
 
-    const prompt = `You are a bug analyst. Analyze the following bug description and find related requirements from the project context.
+    // Create LLM
+    const llm = new ChatOpenAI({
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+      temperature: 0.7,
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    // Create prompt
+    const prompt = PromptTemplate.fromTemplate(`You are a bug analyst. Analyze the following bug description and find related requirements from the project context.
 
 Provide:
 - rootCause: likely root cause of the bug
@@ -222,31 +269,24 @@ Provide:
 Return ONLY valid JSON, no additional text.
 
 Bug Description:
-${bugDescription}
+{bugDescription}
 
 Project Requirements Context:
-${context}
+{context}
 
-Analyze bug:`;
+Analyze bug:`);
 
-    const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are a bug analyst. Return only valid JSON, no markdown or explanations.",
-        },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.7,
-      response_format: { type: "json_object" },
+    // Execute
+    const formattedPrompt = await prompt.format({
+      bugDescription,
+      context,
     });
+    const result = await llm.invoke(formattedPrompt);
 
-    const content = response.choices[0].message.content;
+    const content = result.content;
     return JSON.parse(content);
   } catch (error) {
     console.error("Error analyzing bug with RAG:", error);
     throw error;
   }
 }
-
