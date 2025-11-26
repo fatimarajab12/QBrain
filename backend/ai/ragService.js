@@ -12,6 +12,46 @@ import {
 import { getEmbeddings } from "./embeddings.js";
 
 /**
+ * Extract JSON from markdown code blocks or return as-is
+ * @param {string} text - Text that may contain JSON in code blocks
+ * @returns {string} Extracted JSON string
+ */
+function extractJSON(text) {
+  if (!text || typeof text !== "string") return text;
+  
+  // Remove markdown code blocks (```json ... ``` or ``` ... ```)
+  let cleaned = text.trim();
+  
+  // Match ```json ... ``` or ``` ... ```
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)```/;
+  const match = cleaned.match(codeBlockRegex);
+  
+  if (match && match[1]) {
+    cleaned = match[1].trim();
+  }
+  
+  // Also handle cases where JSON might be wrapped in other markdown
+  cleaned = cleaned.replace(/^```json\s*/i, "").replace(/```\s*$/, "");
+  
+  return cleaned.trim();
+}
+
+/**
+ * Parse JSON with fallback for markdown-wrapped JSON
+ * @param {string} text - Text to parse
+ * @returns {any} Parsed JSON object
+ */
+function parseJSONSafely(text) {
+  try {
+    const cleaned = extractJSON(text);
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error("JSON parsing error. Original text:", text.substring(0, 200));
+    throw new Error(`Invalid JSON response: ${error.message}`);
+  }
+}
+
+/**
  * Query RAG system: search vector DB + generate AI response
  * @param {string} projectId - Project identifier
  * @param {string} question - User question
@@ -142,7 +182,7 @@ For each feature, provide:
 - status: pending, in_progress, or completed
 - acceptanceCriteria: array of acceptance criteria strings
 
-Return ONLY a valid JSON array of features, no additional text.
+IMPORTANT: Return ONLY a valid JSON array, no markdown code blocks, no explanations, no additional text. Start with [ and end with ].
 
 SRS Context:
 {context}
@@ -154,7 +194,7 @@ Generate features as JSON array:`);
     const result = await llm.invoke(formattedPrompt);
 
     const content = result.content;
-    const parsed = JSON.parse(content);
+    const parsed = parseJSONSafely(content);
 
     // Handle both {features: [...]} and [...] formats
     const features = Array.isArray(parsed) ? parsed : parsed.features || [];
@@ -210,7 +250,7 @@ For each test case, provide:
 - status: pending, in_progress, passed, failed, or blocked
 - preconditions: array of prerequisite conditions (optional)
 
-Return ONLY a valid JSON array of test cases, no additional text.
+IMPORTANT: Return ONLY a valid JSON array, no markdown code blocks, no explanations, no additional text. Start with [ and end with ].
 
 Feature Description:
 {featureDescription}
@@ -228,7 +268,7 @@ Generate test cases as JSON array:`);
     const result = await llm.invoke(formattedPrompt);
 
     const content = result.content;
-    const parsed = JSON.parse(content);
+    const parsed = parseJSONSafely(content);
 
     // Handle both {testCases: [...]} and [...] formats
     const testCases = Array.isArray(parsed) ? parsed : parsed.testCases || [];
@@ -266,7 +306,7 @@ Provide:
 - relatedRequirements: array of requirement IDs or descriptions that relate to this bug
 - suggestedFix: suggested fix or workaround
 
-Return ONLY valid JSON, no additional text.
+IMPORTANT: Return ONLY valid JSON object, no markdown code blocks, no explanations, no additional text. Start with { and end with }.
 
 Bug Description:
 {bugDescription}
@@ -284,7 +324,7 @@ Analyze bug:`);
     const result = await llm.invoke(formattedPrompt);
 
     const content = result.content;
-    return JSON.parse(content);
+    return parseJSONSafely(content);
   } catch (error) {
     console.error("Error analyzing bug with RAG:", error);
     throw error;

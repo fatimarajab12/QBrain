@@ -73,8 +73,12 @@ class VectorStore {
         queryName: "match_project_vectors",
       });
 
-      const results = await vectorStore.similaritySearchWithScore(query, k);
-      const filtered = results.filter(([doc]) => doc.metadata.projectId === projectId);
+      // Pass projectId in filter for LangChain's SupabaseVectorStore
+      const filter = { projectId };
+      const results = await vectorStore.similaritySearchWithScore(query, k, filter);
+
+      // Filter by projectId as fallback (in case LangChain doesn't apply filter correctly)
+      const filtered = results.filter(([doc]) => doc.metadata?.projectId === projectId);
 
       return filtered.map(([doc, score]) => ({
         content: doc.pageContent,
@@ -98,12 +102,18 @@ class VectorStore {
       queryName: "match_project_vectors",
     });
 
-    const baseRetriever = vectorStore.asRetriever({ k });
+    // Pass projectId in filter for LangChain's SupabaseVectorStore
+    const filter = { projectId };
+    const baseRetriever = vectorStore.asRetriever({ 
+      k,
+      filter,
+    });
 
     return {
       async getRelevantDocuments(query) {
         const docs = await baseRetriever.getRelevantDocuments(query);
-        return docs.filter(doc => doc.metadata.projectId === projectId);
+        // Double-check filter (in case LangChain doesn't apply it correctly)
+        return docs.filter(doc => doc.metadata?.projectId === projectId);
       },
       getRetrieverName() {
         return "supabase_filtered";

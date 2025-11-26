@@ -25,32 +25,38 @@ ON project_vectors(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_vectors_created_at 
 ON project_vectors(created_at DESC);
 
--- 6. RPC function for similarity search
+-- 6. RPC function for similarity search (LangChain compatible signature)
+-- LangChain expects: match_project_vectors(filter, match_count, query_embedding)
 CREATE OR REPLACE FUNCTION match_project_vectors(
-  project_id_param TEXT,
-  query_embedding vector(1536),
-  match_threshold float DEFAULT 0.7,
-  match_count int DEFAULT 5
+  filter JSONB DEFAULT '{}',
+  match_count INT DEFAULT 5,
+  query_embedding vector(1536) DEFAULT NULL
 )
 RETURNS TABLE (
   id UUID,
   content TEXT,
   metadata JSONB,
-  similarity float
+  similarity FLOAT
 )
 LANGUAGE plpgsql
+STABLE
 AS $$
+DECLARE
+  project_id_filter TEXT;
 BEGIN
+  -- Extract projectId from filter JSONB if provided
+  project_id_filter := COALESCE(filter->>'projectId', NULL);
+  
   RETURN QUERY
   SELECT
-    project_vectors.id,
-    project_vectors.content,
-    project_vectors.metadata,
-    1 - (project_vectors.embedding <=> query_embedding) AS similarity
-  FROM project_vectors
-  WHERE project_vectors.project_id = project_id_param
-    AND 1 - (project_vectors.embedding <=> query_embedding) > match_threshold
-  ORDER BY project_vectors.embedding <=> query_embedding
+    pv.id,
+    pv.content,
+    pv.metadata,
+    1 - (pv.embedding <=> query_embedding) AS similarity
+  FROM project_vectors pv
+  WHERE query_embedding IS NOT NULL
+    AND (project_id_filter IS NULL OR pv.metadata->>'projectId' = project_id_filter)
+  ORDER BY pv.embedding <=> query_embedding
   LIMIT match_count;
 END;
 $$;

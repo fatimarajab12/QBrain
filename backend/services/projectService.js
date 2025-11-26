@@ -4,6 +4,54 @@ import { generateEmbeddingsBatch } from "../ai/embeddings.js";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { Document } from "@langchain/core/documents";
 import fs from "fs";
+import { v4 as uuidv4 } from "uuid";
+import * as featureService from "./featureService.js";
+import * as testCaseService from "./testCaseService.js";
+
+export async function createProject(projectData) {
+  const projectId = `project_${uuidv4().slice(0, 13)}`;
+  
+  const project = new Project({
+    projectId,
+    name: projectData.name,
+    description: projectData.description || "",
+    userId: projectData.userId,
+  });
+
+  await project.save();
+  return project;
+}
+
+export async function getProjectById(id) {
+  return await Project.findById(id).populate("userId", "name email");
+}
+
+export async function getUserProjects(userId) {
+  return await Project.find({ userId }).sort({ createdAt: -1 });
+}
+
+export async function updateProject(id, updateData) {
+  return await Project.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+  });
+}
+
+export async function deleteProject(id) {
+  await Project.findByIdAndDelete(id);
+}
+
+export async function getProjectStats(id) {
+  const project = await Project.findById(id);
+  if (!project) throw new Error("Project not found");
+
+  return {
+    projectId: project.projectId,
+    name: project.name,
+    status: project.status,
+    srsDocument: project.srsDocument,
+  };
+}
 
 export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   console.log(`Starting SRS processing for project: ${projectId}`);
@@ -88,5 +136,53 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   await project.save();
   console.log("Project SRS data updated");
 
-  return { success: true, chunksCount: chunks.length, message: "SRS processed successfully" };
+  // Automatically generate features and test cases after SRS processing
+  let featuresGenerated = 0;
+  let testCasesGenerated = 0;
+  
+  try {
+    console.log("Starting automatic feature generation from SRS...");
+    const generatedFeatures = await featureService.generateFeaturesFromSRS(project._id, {
+      nContextChunks: 10,
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    });
+    featuresGenerated = generatedFeatures.length;
+    console.log(`Generated ${featuresGenerated} features from SRS`);
+
+    // Generate test cases for each feature
+    console.log("Starting automatic test case generation for features...");
+    for (const feature of generatedFeatures) {
+      try {
+        const generatedTestCases = await testCaseService.generateTestCasesForFeature(feature._id, {
+          nContextChunks: 5,
+          model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        });
+        testCasesGenerated += generatedTestCases.length;
+        console.log(`Generated ${generatedTestCases.length} test cases for feature: ${feature.name}`);
+      } catch (error) {
+        console.error(`Error generating test cases for feature ${feature.name}:`, error.message);
+        // Continue with other features even if one fails
+      }
+    }
+    console.log(`Total test cases generated: ${testCasesGenerated}`);
+  } catch (error) {
+    console.error("Error during automatic feature/test case generation:", error.message);
+    // Don't fail the SRS upload if generation fails - return partial success
+    return {
+      success: true,
+      chunksCount: chunks.length,
+      message: "SRS processed successfully, but feature generation failed",
+      warning: error.message,
+      featuresGenerated: 0,
+      testCasesGenerated: 0,
+    };
+  }
+
+  return {
+    success: true,
+    chunksCount: chunks.length,
+    message: "SRS processed successfully",
+    featuresGenerated,
+    testCasesGenerated,
+  };
 }
