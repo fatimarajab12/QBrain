@@ -27,12 +27,12 @@ const userSchema = new mongoose.Schema(
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters"],
     },
-   
+
     isVerified: {
       type: Boolean,
       default: false,
     },
-   
+
     lastLogin: {
       type: Date,
     },
@@ -62,27 +62,27 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 userSchema.methods.generateEmailVerificationToken = function () {
   const verificationToken = crypto.randomBytes(32).toString("hex");
-  
+
   this.emailVerificationToken = crypto
     .createHash("sha256")
     .update(verificationToken)
     .digest("hex");
-    
-  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-  
+
+  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+
   return verificationToken;
 };
 
 userSchema.methods.generatePasswordResetToken = function () {
   const resetToken = crypto.randomBytes(32).toString("hex");
-  
+
   this.passwordResetToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-    
-  this.passwordResetExpires = Date.now() + 30 * 60 * 1000; // 30 minutes
-  
+
+  this.passwordResetExpires = Date.now() + 30 * 60 * 1000;
+
   return resetToken;
 };
 

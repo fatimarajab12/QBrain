@@ -16,21 +16,20 @@ class EmailConfig {
           user: process.env.BREVO_SMTP_USERNAME,
           pass: process.env.BREVO_SMTP_PASSWORD,
         },
-        pool: true, 
+        pool: true,
         maxConnections: 5,
         maxMessages: 100,
         rateDelta: 1000,
         rateLimit: 5
       });
 
-      // Verify connection
       await this.transporter.verify();
       this.isConnected = true;
-      
+
       console.log('Email service initialized successfully');
       console.log('SMTP Server:', process.env.BREVO_SMTP_HOST);
       console.log('SMTP User:', process.env.BREVO_SMTP_USERNAME);
-      
+
       return this.transporter;
     } catch (error) {
       this.isConnected = false;

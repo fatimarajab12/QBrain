@@ -159,7 +159,7 @@ export const Signin = async (req, res) => {
   );
   return res.status(200).json({
     success: true,
-    message: "Signin successful", 
+    message: "Signin successful",
     token,
   });
 
@@ -178,22 +178,19 @@ export const forgetPassword = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // توليد كود 4 أرقام كـ string مع الحفاظ على leading zeros
     const code = customAlphabet("0123456789", 4)();
 
-    // تخزين الكود hashed في DB مع صلاحية 10 دقائق
     const hashedCode = crypto.createHash("sha256").update(code).digest("hex");
     user.passwordResetToken = hashedCode;
-    user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 دقائق
+    user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    // إرسال البريد
     const result = await emailService.sendPasswordResetCode(user.email, code, user.name);
 
     return res.status(200).json({
       success: true,
       emailStatus: result,
-      testCode: code, // فقط للتطوير
+      testCode: code,
     });
   } catch (err) {
     console.error("ForgetPassword error:", err);
@@ -242,9 +239,6 @@ export const Logout = (req, res) => {
   res.clearCookie("token");
   res.status(200).json({ success: true, message: "Logged out successfully" });
 };
-
-
-
 
 export const deleteUserByEmail = async (req, res) => {
   const { email } = req.body;

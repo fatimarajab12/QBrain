@@ -1,11 +1,6 @@
-// AI Controller - RAG queries and AI operations
 import { queryRAG, getRAGContext } from "../ai/ragService.js";
 import { vectorDB } from "../vector/vectorDB.js";
 
-/**
- * Query RAG system with a question
- * POST /api/ai/query
- */
 export const queryAI = async (req, res) => {
   try {
     const { projectId, question } = req.body;
@@ -37,10 +32,6 @@ export const queryAI = async (req, res) => {
   }
 };
 
-/**
- * Get RAG context for a query (without generating response)
- * POST /api/ai/context
- */
 export const getContext = async (req, res) => {
   try {
     const { projectId, query } = req.body;
@@ -73,10 +64,6 @@ export const getContext = async (req, res) => {
   }
 };
 
-/**
- * Get vector collection info
- * GET /api/ai/vector-info/:projectId
- */
 export const getVectorInfo = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -96,4 +83,3 @@ export const getVectorInfo = async (req, res) => {
     });
   }
 };
-

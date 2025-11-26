@@ -1,11 +1,5 @@
--- Update the match_project_vectors function to match LangChain's expected signature
--- Run this in your Supabase SQL Editor
-
--- Drop the old function if it exists (with old signature)
 DROP FUNCTION IF EXISTS match_project_vectors(TEXT, vector, float, int);
 
--- Create the new function with LangChain-compatible signature
--- LangChain expects: match_project_vectors(filter, match_count, query_embedding)
 CREATE OR REPLACE FUNCTION match_project_vectors(
   filter JSONB DEFAULT '{}',
   match_count INT DEFAULT 5,
@@ -23,7 +17,6 @@ AS $$
 DECLARE
   project_id_filter TEXT;
 BEGIN
-  -- Extract projectId from filter JSONB if provided
   project_id_filter := COALESCE(filter->>'projectId', NULL);
   
   RETURN QUERY
@@ -40,7 +33,6 @@ BEGIN
 END;
 $$;
 
--- Grant execute permission
 GRANT EXECUTE ON FUNCTION match_project_vectors TO authenticated;
 GRANT EXECUTE ON FUNCTION match_project_vectors TO anon;
 GRANT EXECUTE ON FUNCTION match_project_vectors TO service_role;

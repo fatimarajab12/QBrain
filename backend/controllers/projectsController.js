@@ -1,10 +1,8 @@
-// Projects Controller
 import * as projectService from "../services/projectService.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = "./uploads";
@@ -21,7 +19,7 @@ const storage = multer.diskStorage({
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [".pdf", ".txt"];
     const ext = path.extname(file.originalname).toLowerCase();
@@ -33,14 +31,10 @@ export const upload = multer({
   },
 });
 
-/**
- * Create a new project
- * POST /api/projects
- */
 export const createProject = async (req, res) => {
   try {
     const { name, description, status } = req.body;
-    const userId = req.user?.id || req.body.userId; // Adjust based on your auth middleware
+    const userId = req.user?.id || req.body.userId;
 
     if (!name) {
       return res.status(400).json({
@@ -71,10 +65,6 @@ export const createProject = async (req, res) => {
   }
 };
 
-/**
- * Get project by ID
- * GET /api/projects/:id
- */
 export const getProject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,13 +91,9 @@ export const getProject = async (req, res) => {
   }
 };
 
-/**
- * Get all projects for user
- * GET /api/projects
- */
 export const getUserProjects = async (req, res) => {
   try {
-    const userId = req.user?.id || req.query.userId; // Adjust based on your auth middleware
+    const userId = req.user?.id || req.query.userId;
 
     if (!userId) {
       return res.status(400).json({
@@ -133,10 +119,6 @@ export const getUserProjects = async (req, res) => {
   }
 };
 
-/**
- * Update project
- * PUT /api/projects/:id
- */
 export const updateProject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -166,10 +148,6 @@ export const updateProject = async (req, res) => {
   }
 };
 
-/**
- * Delete project
- * DELETE /api/projects/:id
- */
 export const deleteProject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -189,12 +167,8 @@ export const deleteProject = async (req, res) => {
   }
 };
 
-/**
- * Upload and process SRS document
- * POST /api/projects/:id/upload-srs
- */
 export const uploadSRS = async (req, res) => {
-  
+
   try {
     const { id } = req.params;
     console.log("Upload Request Received for Project ID:", id);
@@ -229,10 +203,6 @@ export const uploadSRS = async (req, res) => {
   }
 };
 
-/**
- * Get project statistics
- * GET /api/projects/:id/stats
- */
 export const getProjectStats = async (req, res) => {
   try {
     const { id } = req.params;
@@ -251,4 +221,3 @@ export const getProjectStats = async (req, res) => {
     });
   }
 };
-

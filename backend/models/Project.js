@@ -1,5 +1,3 @@
-// Project.js Model - FIX DUPLICATE INDEX WARNING
-
 import mongoose from "mongoose";
 
 const projectSchema = new mongoose.Schema(
@@ -41,7 +39,6 @@ const projectSchema = new mongoose.Schema(
   }
 );
 
-// FIX: Only create index once
 projectSchema.index({ projectId: 1 }, { unique: true });
 projectSchema.index({ userId: 1 });
 projectSchema.index({ status: 1 });

@@ -58,12 +58,10 @@ const featureSchema = new mongoose.Schema(
   }
 );
 
-// Indexes
 featureSchema.index({ projectId: 1, status: 1 });
 featureSchema.index({ featureId: 1 });
 featureSchema.index({ priority: 1 });
 
-// Virtual for test cases count
 featureSchema.virtual("testCasesCount", {
   ref: "TestCase",
   localField: "_id",
@@ -75,4 +73,3 @@ featureSchema.set("toJSON", { virtuals: true });
 featureSchema.set("toObject", { virtuals: true });
 
 export const Feature = mongoose.model("Feature", featureSchema);
-

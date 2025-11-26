@@ -13,7 +13,7 @@ class EmailService {
   async sendTemplateEmail(to, templateType, templateData) {
     try {
       const template = getTemplate(templateType, templateData);
-      
+
       if (!template) {
         throw new Error(`Template ${templateType} not found`);
       }
@@ -27,9 +27,9 @@ class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      
+
       console.log(`Email sent (${templateType}) to: ${to}`);
-      
+
       return {
         success: true,
         messageId: result.messageId,
@@ -44,7 +44,7 @@ class EmailService {
 
   async sendVerificationEmail(email, name, verificationToken) {
     const verificationLink = `${process.env.APP_URL}/api/auth/verify-email?token=${verificationToken}`;
-    
+
     return await this.sendTemplateEmail(email, EmailTemplates.VERIFICATION, {
       userName: name,
       verificationLink,
@@ -80,7 +80,7 @@ class EmailService {
     } else if (error.code === 'ECONNECTION') {
       return new Error('Cannot connect to email server.');
     }
-    
+
     return error;
   }
 

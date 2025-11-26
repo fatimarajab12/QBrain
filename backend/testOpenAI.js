@@ -45,7 +45,7 @@ app.post("/summarize-pdf", upload.single("file"), async (req, res) => {
 
     const prompt = `
       Please summarize the following text concisely and clearly:
-      
+
       ${pdfText}
     `;
 
@@ -55,7 +55,7 @@ app.post("/summarize-pdf", upload.single("file"), async (req, res) => {
         { role: "system", content: "You are a helpful assistant who summarizes PDF documents." },
         { role: "user", content: prompt },
       ],
-      max_tokens: 500, 
+      max_tokens: 500,
     });
 
     const summary = response.choices[0].message.content;

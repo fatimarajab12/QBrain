@@ -6,7 +6,7 @@ import {
   forgetPassword,
   resetPassword,
   deleteUserByEmail,
- 
+
 } from "../controllers/auth.controller.js";
 
 const authRouter = express.Router();

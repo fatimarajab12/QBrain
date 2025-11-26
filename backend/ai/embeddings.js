@@ -1,4 +1,3 @@
-// ai/embeddings.js
 import { OpenAIEmbeddings } from "@langchain/openai";
 
 let embeddingsInstance = null;
@@ -13,9 +12,6 @@ function getEmbeddingsInstance(model = "text-embedding-3-small") {
   return embeddingsInstance;
 }
 
-/**
- * Generate embedding for a single text with retry
- */
 export async function generateEmbedding(text, model = "text-embedding-3-small") {
   if (!text || typeof text !== "string" || text.trim().length === 0)
     throw new Error("Text must be a non-empty string");
@@ -35,9 +31,6 @@ export async function generateEmbedding(text, model = "text-embedding-3-small") 
   }
 }
 
-/**
- * Generate embeddings for multiple texts (batch)
- */
 export async function generateEmbeddingsBatch(texts, model = "text-embedding-3-small") {
   if (!Array.isArray(texts) || texts.length === 0)
     throw new Error("Texts must be a non-empty array");
@@ -60,9 +53,6 @@ export async function generateEmbeddingsBatch(texts, model = "text-embedding-3-s
   }
 }
 
-/**
- * Get embedding model dimensions
- */
 export function getEmbeddingDimensions(model = "text-embedding-3-small") {
   const dims = {
     "text-embedding-3-small": 1536,
@@ -72,9 +62,6 @@ export function getEmbeddingDimensions(model = "text-embedding-3-small") {
   return dims[model] || 1536;
 }
 
-/**
- * Return embeddings instance (for vectorStore)
- */
 export function getEmbeddings(model = "text-embedding-3-small") {
   return getEmbeddingsInstance(model);
 }

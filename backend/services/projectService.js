@@ -10,7 +10,7 @@ import * as testCaseService from "./testCaseService.js";
 
 export async function createProject(projectData) {
   const projectId = `project_${uuidv4().slice(0, 13)}`;
-  
+
   const project = new Project({
     projectId,
     name: projectData.name,
@@ -65,7 +65,7 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
     const dataBuffer = fs.readFileSync(filePath);
     const uint8Array = new Uint8Array(dataBuffer);
     const pdf = await PDFJS.getDocument({ data: uint8Array }).promise;
-    
+
     let fullText = "";
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
@@ -83,7 +83,7 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
 
   if (!text.trim()) throw new Error("No text found in document");
 
-  console.log("Extracted text:\n", text); 
+  console.log("Extracted text:\n", text);
 
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
@@ -136,10 +136,9 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   await project.save();
   console.log("Project SRS data updated");
 
-  // Automatically generate features and test cases after SRS processing
   let featuresGenerated = 0;
   let testCasesGenerated = 0;
-  
+
   try {
     console.log("Starting automatic feature generation from SRS...");
     const generatedFeatures = await featureService.generateFeaturesFromSRS(project._id, {
@@ -149,7 +148,6 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
     featuresGenerated = generatedFeatures.length;
     console.log(`Generated ${featuresGenerated} features from SRS`);
 
-    // Generate test cases for each feature
     console.log("Starting automatic test case generation for features...");
     for (const feature of generatedFeatures) {
       try {
@@ -161,13 +159,13 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
         console.log(`Generated ${generatedTestCases.length} test cases for feature: ${feature.name}`);
       } catch (error) {
         console.error(`Error generating test cases for feature ${feature.name}:`, error.message);
-        // Continue with other features even if one fails
+
       }
     }
     console.log(`Total test cases generated: ${testCasesGenerated}`);
   } catch (error) {
     console.error("Error during automatic feature/test case generation:", error.message);
-    // Don't fail the SRS upload if generation fails - return partial success
+
     return {
       success: true,
       chunksCount: chunks.length,

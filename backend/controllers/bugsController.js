@@ -1,10 +1,5 @@
-// Bugs Controller
 import * as bugService from "../services/bugService.js";
 
-/**
- * Create a new bug
- * POST /api/bugs
- */
 export const createBug = async (req, res) => {
   try {
     const bugData = req.body;
@@ -16,7 +11,6 @@ export const createBug = async (req, res) => {
       });
     }
 
-    // Set reportedBy from auth middleware or request
     bugData.reportedBy = req.user?.id || bugData.reportedBy;
 
     const bug = await bugService.createBug(bugData);
@@ -36,10 +30,6 @@ export const createBug = async (req, res) => {
   }
 };
 
-/**
- * Get bug by ID
- * GET /api/bugs/:id
- */
 export const getBug = async (req, res) => {
   try {
     const { id } = req.params;
@@ -66,10 +56,6 @@ export const getBug = async (req, res) => {
   }
 };
 
-/**
- * Get all bugs for a project
- * GET /api/projects/:projectId/bugs
- */
 export const getProjectBugs = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -96,10 +82,6 @@ export const getProjectBugs = async (req, res) => {
   }
 };
 
-/**
- * Update bug
- * PUT /api/bugs/:id
- */
 export const updateBug = async (req, res) => {
   try {
     const { id } = req.params;
@@ -129,10 +111,6 @@ export const updateBug = async (req, res) => {
   }
 };
 
-/**
- * Delete bug
- * DELETE /api/bugs/:id
- */
 export const deleteBug = async (req, res) => {
   try {
     const { id } = req.params;
@@ -152,10 +130,6 @@ export const deleteBug = async (req, res) => {
   }
 };
 
-/**
- * Analyze bug using AI
- * POST /api/bugs/:id/analyze
- */
 export const analyzeBug = async (req, res) => {
   try {
     const { id } = req.params;
@@ -175,4 +149,3 @@ export const analyzeBug = async (req, res) => {
     });
   }
 };
-

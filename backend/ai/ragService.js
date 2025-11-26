@@ -1,4 +1,3 @@
-// RAG Service with LangChain v0.3.0
 import { vectorStore } from "../vector/vectorStore.js";
 import { ChatOpenAI } from "@langchain/openai";
 import { createRetrievalChain } from "langchain/chains/retrieval";
@@ -11,36 +10,23 @@ import {
 } from "@langchain/core/prompts";
 import { getEmbeddings } from "./embeddings.js";
 
-/**
- * Extract JSON from markdown code blocks or return as-is
- * @param {string} text - Text that may contain JSON in code blocks
- * @returns {string} Extracted JSON string
- */
 function extractJSON(text) {
   if (!text || typeof text !== "string") return text;
-  
-  // Remove markdown code blocks (```json ... ``` or ``` ... ```)
+
   let cleaned = text.trim();
-  
-  // Match ```json ... ``` or ``` ... ```
+
   const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)```/;
   const match = cleaned.match(codeBlockRegex);
-  
+
   if (match && match[1]) {
     cleaned = match[1].trim();
   }
-  
-  // Also handle cases where JSON might be wrapped in other markdown
+
   cleaned = cleaned.replace(/^```json\s*/i, "").replace(/```\s*$/, "");
-  
+
   return cleaned.trim();
 }
 
-/**
- * Parse JSON with fallback for markdown-wrapped JSON
- * @param {string} text - Text to parse
- * @returns {any} Parsed JSON object
- */
 function parseJSONSafely(text) {
   try {
     const cleaned = extractJSON(text);
@@ -51,31 +37,22 @@ function parseJSONSafely(text) {
   }
 }
 
-/**
- * Query RAG system: search vector DB + generate AI response
- * @param {string} projectId - Project identifier
- * @param {string} question - User question
- * @param {number} nResults - Number of context chunks to retrieve
- * @returns {Promise<string>} AI-generated response
- */
 export async function queryRAG(projectId, question, nResults = 5) {
   try {
-    // Get retriever
+
     const retriever = await vectorStore.getRetriever(projectId, nResults);
 
     if (!retriever) {
       return "No relevant information found in the project knowledge base.";
     }
 
-    // Create LLM
     const llm = new ChatOpenAI({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       temperature: 0.7,
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Create prompt template
-    const systemTemplate = `You are a helpful AI assistant that answers questions based on the provided context from project documentation. 
+    const systemTemplate = `You are a helpful AI assistant that answers questions based on the provided context from project documentation.
 Only use information from the context provided. If the context doesn't contain relevant information, say so clearly.
 Be concise and professional in your response.
 
@@ -91,7 +68,6 @@ Please provide a helpful answer based on the context above.`;
       HumanMessagePromptTemplate.fromTemplate(userTemplate),
     ]);
 
-    // Create the chain
     const combineDocsChain = await createStuffDocumentsChain({
       llm,
       prompt: chatPrompt,
@@ -103,7 +79,6 @@ Please provide a helpful answer based on the context above.`;
       retriever,
     });
 
-    // Execute the chain
     const result = await retrievalChain.invoke({
       input: question,
     });
@@ -115,13 +90,6 @@ Please provide a helpful answer based on the context above.`;
   }
 }
 
-/**
- * Get context chunks for a query (without generating response)
- * @param {string} projectId - Project identifier
- * @param {string} query - Query text
- * @param {number} nResults - Number of results
- * @returns {Promise<Array>} Context chunks
- */
 export async function getRAGContext(projectId, query, nResults = 5) {
   try {
     const similarChunks = await vectorStore.similaritySearch(
@@ -141,17 +109,10 @@ export async function getRAGContext(projectId, query, nResults = 5) {
   }
 }
 
-/**
- * Generate features from SRS using RAG
- * @param {string} projectId - Project identifier
- * @param {Object} options - Generation options
- * @returns {Promise<Array>} Generated features
- */
 export async function generateFeaturesFromRAG(projectId, options = {}) {
   try {
     const { nContextChunks = 10, model = "gpt-4o-mini" } = options;
 
-    // Get context
     const contextChunks = await getRAGContext(
       projectId,
       "requirements features specifications",
@@ -164,14 +125,12 @@ export async function generateFeaturesFromRAG(projectId, options = {}) {
 
     const context = contextChunks.map((chunk) => chunk.text).join("\n\n");
 
-    // Create LLM
     const llm = new ChatOpenAI({
       model: model,
       temperature: 0.7,
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Create prompt
     const prompt = PromptTemplate.fromTemplate(`You are a project analyst. Based on the following SRS (Software Requirements Specification) context, generate a comprehensive list of features.
 
 For each feature, provide:
@@ -189,14 +148,12 @@ SRS Context:
 
 Generate features as JSON array:`);
 
-    // Execute
     const formattedPrompt = await prompt.format({ context });
     const result = await llm.invoke(formattedPrompt);
 
     const content = result.content;
     const parsed = parseJSONSafely(content);
 
-    // Handle both {features: [...]} and [...] formats
     const features = Array.isArray(parsed) ? parsed : parsed.features || [];
 
     return features;
@@ -206,13 +163,6 @@ Generate features as JSON array:`);
   }
 }
 
-/**
- * Generate test cases for a feature using RAG
- * @param {string} projectId - Project identifier
- * @param {string} featureDescription - Feature description
- * @param {Object} options - Generation options
- * @returns {Promise<Array>} Generated test cases
- */
 export async function generateTestCasesFromRAG(
   projectId,
   featureDescription,
@@ -221,7 +171,6 @@ export async function generateTestCasesFromRAG(
   try {
     const { nContextChunks = 5, model = "gpt-4o-mini" } = options;
 
-    // Get relevant context
     const contextChunks = await getRAGContext(
       projectId,
       featureDescription,
@@ -230,14 +179,12 @@ export async function generateTestCasesFromRAG(
 
     const context = contextChunks.map((chunk) => chunk.text).join("\n\n");
 
-    // Create LLM
     const llm = new ChatOpenAI({
       model: model,
       temperature: 0.7,
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Create prompt
     const prompt = PromptTemplate.fromTemplate(`You are a QA engineer. Based on the following feature description and project requirements context, generate comprehensive test cases.
 
 For each test case, provide:
@@ -260,7 +207,6 @@ Project Requirements Context:
 
 Generate test cases as JSON array:`);
 
-    // Execute
     const formattedPrompt = await prompt.format({
       featureDescription,
       context,
@@ -270,7 +216,6 @@ Generate test cases as JSON array:`);
     const content = result.content;
     const parsed = parseJSONSafely(content);
 
-    // Handle both {testCases: [...]} and [...] formats
     const testCases = Array.isArray(parsed) ? parsed : parsed.testCases || [];
 
     return testCases;
@@ -280,25 +225,17 @@ Generate test cases as JSON array:`);
   }
 }
 
-/**
- * Analyze bug using RAG to find related requirements
- * @param {string} projectId - Project identifier
- * @param {string} bugDescription - Bug description
- * @returns {Promise<Object>} Bug analysis with related requirements
- */
 export async function analyzeBugWithRAG(projectId, bugDescription) {
   try {
     const contextChunks = await getRAGContext(projectId, bugDescription, 5);
     const context = contextChunks.map((chunk) => chunk.text).join("\n\n");
 
-    // Create LLM
     const llm = new ChatOpenAI({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       temperature: 0.7,
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Create prompt
     const prompt = PromptTemplate.fromTemplate(`You are a bug analyst. Analyze the following bug description and find related requirements from the project context.
 
 Provide:
@@ -316,7 +253,6 @@ Project Requirements Context:
 
 Analyze bug:`);
 
-    // Execute
     const formattedPrompt = await prompt.format({
       bugDescription,
       context,

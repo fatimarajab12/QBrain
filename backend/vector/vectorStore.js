@@ -1,4 +1,3 @@
-// vector/vectorStore.js
 import { createClient } from "@supabase/supabase-js";
 import { getEmbeddings } from "../ai/embeddings.js";
 import { Document } from "@langchain/core/documents";
@@ -45,7 +44,7 @@ class VectorStore {
         content: doc.pageContent,
         embedding: embeddings ? embeddings[index] : undefined,
         metadata: doc.metadata,
-        project_id: projectId, 
+        project_id: projectId,
       }));
 
       const { error } = await this.client
@@ -61,7 +60,6 @@ class VectorStore {
     }
   }
 
-  
   async similaritySearch(projectId, query, k = 5) {
     await this.ensureInitialized();
 
@@ -73,11 +71,9 @@ class VectorStore {
         queryName: "match_project_vectors",
       });
 
-      // Pass projectId in filter for LangChain's SupabaseVectorStore
       const filter = { projectId };
       const results = await vectorStore.similaritySearchWithScore(query, k, filter);
 
-      // Filter by projectId as fallback (in case LangChain doesn't apply filter correctly)
       const filtered = results.filter(([doc]) => doc.metadata?.projectId === projectId);
 
       return filtered.map(([doc, score]) => ({
@@ -91,7 +87,6 @@ class VectorStore {
     }
   }
 
-  
   async getRetriever(projectId, k = 5) {
     await this.ensureInitialized();
 
@@ -102,9 +97,8 @@ class VectorStore {
       queryName: "match_project_vectors",
     });
 
-    // Pass projectId in filter for LangChain's SupabaseVectorStore
     const filter = { projectId };
-    const baseRetriever = vectorStore.asRetriever({ 
+    const baseRetriever = vectorStore.asRetriever({
       k,
       filter,
     });
@@ -112,7 +106,7 @@ class VectorStore {
     return {
       async getRelevantDocuments(query) {
         const docs = await baseRetriever.getRelevantDocuments(query);
-        // Double-check filter (in case LangChain doesn't apply it correctly)
+
         return docs.filter(doc => doc.metadata?.projectId === projectId);
       },
       getRetrieverName() {
@@ -121,20 +115,18 @@ class VectorStore {
     };
   }
 
-  
   async getProjectInfo(projectId) {
     await this.ensureInitialized();
 
     const { count, error } = await this.client
       .from("project_vectors")
       .select("*", { count: "exact", head: true })
-      .eq("project_id", projectId); 
+      .eq("project_id", projectId);
     if (error) throw error;
 
     return { projectId, chunksCount: count || 0 };
   }
 
-  
   async deleteProject(projectId) {
     await this.ensureInitialized();
 

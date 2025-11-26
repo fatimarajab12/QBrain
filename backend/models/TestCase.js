@@ -86,7 +86,6 @@ const testCaseSchema = new mongoose.Schema(
   }
 );
 
-// Indexes
 testCaseSchema.index({ featureId: 1, status: 1 });
 testCaseSchema.index({ projectId: 1 });
 testCaseSchema.index({ testCaseId: 1 });
@@ -96,4 +95,3 @@ testCaseSchema.set("toJSON", { virtuals: true });
 testCaseSchema.set("toObject", { virtuals: true });
 
 export const TestCase = mongoose.model("TestCase", testCaseSchema);
-

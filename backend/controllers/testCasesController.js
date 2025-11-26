@@ -1,10 +1,5 @@
-// Test Cases Controller
 import * as testCaseService from "../services/testCaseService.js";
 
-/**
- * Create a new test case
- * POST /api/test-cases
- */
 export const createTestCase = async (req, res) => {
   try {
     const testCaseData = req.body;
@@ -33,10 +28,6 @@ export const createTestCase = async (req, res) => {
   }
 };
 
-/**
- * Get test case by ID
- * GET /api/test-cases/:id
- */
 export const getTestCase = async (req, res) => {
   try {
     const { id } = req.params;
@@ -63,10 +54,6 @@ export const getTestCase = async (req, res) => {
   }
 };
 
-/**
- * Get all test cases for a feature
- * GET /api/features/:featureId/test-cases
- */
 export const getFeatureTestCases = async (req, res) => {
   try {
     const { featureId } = req.params;
@@ -87,10 +74,6 @@ export const getFeatureTestCases = async (req, res) => {
   }
 };
 
-/**
- * Get all test cases for a project
- * GET /api/projects/:projectId/test-cases
- */
 export const getProjectTestCases = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -111,10 +94,6 @@ export const getProjectTestCases = async (req, res) => {
   }
 };
 
-/**
- * Update test case
- * PUT /api/test-cases/:id
- */
 export const updateTestCase = async (req, res) => {
   try {
     const { id } = req.params;
@@ -144,10 +123,6 @@ export const updateTestCase = async (req, res) => {
   }
 };
 
-/**
- * Delete test case
- * DELETE /api/test-cases/:id
- */
 export const deleteTestCase = async (req, res) => {
   try {
     const { id } = req.params;
@@ -167,10 +142,6 @@ export const deleteTestCase = async (req, res) => {
   }
 };
 
-/**
- * Generate test cases for a feature using AI
- * POST /api/features/:featureId/generate-test-cases
- */
 export const generateTestCases = async (req, res) => {
   try {
     const { featureId } = req.params;
@@ -194,10 +165,6 @@ export const generateTestCases = async (req, res) => {
   }
 };
 
-/**
- * Bulk create test cases
- * POST /api/test-cases/bulk
- */
 export const bulkCreateTestCases = async (req, res) => {
   try {
     const { featureId, testCases } = req.body;
@@ -226,4 +193,3 @@ export const bulkCreateTestCases = async (req, res) => {
     });
   }
 };
-

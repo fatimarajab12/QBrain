@@ -16,7 +16,7 @@ export const getTemplate = (type, data) => {
     },
      [EmailTemplates.RESET_CODE]: {
       subject: 'Your QBrain Password Reset Code',
-      html: resetCodeTemplate(data) 
+      html: resetCodeTemplate(data)
     }
   };
 
@@ -55,8 +55,6 @@ const welcomeTemplate = ({ userName }) => `
 </body>
 </html>
 `;
-
-
 
 const resetCodeTemplate = ({ userName, code }) => `
 <!DOCTYPE html>

@@ -1,15 +1,9 @@
-// Bug Service - MongoDB + AI integration
 import { Bug } from "../models/Bug.js";
 import { Project } from "../models/Project.js";
 import { Feature } from "../models/Feature.js";
 import { analyzeBugWithRAG } from "../ai/ragService.js";
 import { nanoid } from "nanoid";
 
-/**
- * Create a new bug
- * @param {Object} bugData - Bug data
- * @returns {Promise<Object>} Created bug
- */
 export async function createBug(bugData) {
   try {
     const bugId = `bug_${nanoid(10)}`;
@@ -26,11 +20,6 @@ export async function createBug(bugData) {
   }
 }
 
-/**
- * Get bug by ID
- * @param {string} bugId - Bug ID or MongoDB _id
- * @returns {Promise<Object>} Bug
- */
 export async function getBugById(bugId) {
   try {
     const bug = await Bug.findOne({
@@ -50,12 +39,6 @@ export async function getBugById(bugId) {
   }
 }
 
-/**
- * Get all bugs for a project
- * @param {string} projectId - Project ID
- * @param {Object} filters - Filter options
- * @returns {Promise<Array>} Bugs array
- */
 export async function getProjectBugs(projectId, filters = {}) {
   try {
     const project = await Project.findOne({
@@ -95,12 +78,6 @@ export async function getProjectBugs(projectId, filters = {}) {
   }
 }
 
-/**
- * Update bug
- * @param {string} bugId - Bug ID
- * @param {Object} updateData - Update data
- * @returns {Promise<Object>} Updated bug
- */
 export async function updateBug(bugId, updateData) {
   try {
     const bug = await Bug.findOneAndUpdate(
@@ -116,11 +93,6 @@ export async function updateBug(bugId, updateData) {
   }
 }
 
-/**
- * Delete bug
- * @param {string} bugId - Bug ID
- * @returns {Promise<void>}
- */
 export async function deleteBug(bugId) {
   try {
     await Bug.findOneAndDelete({
@@ -134,11 +106,6 @@ export async function deleteBug(bugId) {
   }
 }
 
-/**
- * Analyze bug using AI/RAG to find related requirements
- * @param {string} bugId - Bug ID
- * @returns {Promise<Object>} Bug with AI analysis
- */
 export async function analyzeBug(bugId) {
   try {
     const bug = await Bug.findOne({
@@ -154,13 +121,10 @@ export async function analyzeBug(bugId) {
       throw new Error("SRS document not processed. Please upload and process SRS first.");
     }
 
-    // Build bug description for analysis
     const bugDescription = `${bug.title}\n\n${bug.description}\n\nSteps to Reproduce: ${bug.stepsToReproduce?.join("\n") || "N/A"}\n\nActual Result: ${bug.actualResult || "N/A"}`;
 
-    // Analyze bug using RAG
     const analysis = await analyzeBugWithRAG(project.projectId, bugDescription);
 
-    // Update bug with AI analysis
     bug.aiAnalysis = {
       ...analysis,
       analyzedAt: new Date(),
@@ -173,4 +137,3 @@ export async function analyzeBug(bugId) {
     throw error;
   }
 }
-

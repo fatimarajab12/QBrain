@@ -96,7 +96,6 @@ const bugSchema = new mongoose.Schema(
   }
 );
 
-// Indexes
 bugSchema.index({ projectId: 1, status: 1 });
 bugSchema.index({ featureId: 1 });
 bugSchema.index({ bugId: 1 });
@@ -107,4 +106,3 @@ bugSchema.set("toJSON", { virtuals: true });
 bugSchema.set("toObject", { virtuals: true });
 
 export const Bug = mongoose.model("Bug", bugSchema);
-

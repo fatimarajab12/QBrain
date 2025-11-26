@@ -1,10 +1,5 @@
-// Features Controller
 import * as featureService from "../services/featureService.js";
 
-/**
- * Create a new feature
- * POST /api/features
- */
 export const createFeature = async (req, res) => {
   try {
     const featureData = req.body;
@@ -33,10 +28,6 @@ export const createFeature = async (req, res) => {
   }
 };
 
-/**
- * Get feature by ID
- * GET /api/features/:id
- */
 export const getFeature = async (req, res) => {
   try {
     const { id } = req.params;
@@ -63,10 +54,6 @@ export const getFeature = async (req, res) => {
   }
 };
 
-/**
- * Get all features for a project
- * GET /api/projects/:projectId/features
- */
 export const getProjectFeatures = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -87,10 +74,6 @@ export const getProjectFeatures = async (req, res) => {
   }
 };
 
-/**
- * Update feature
- * PUT /api/features/:id
- */
 export const updateFeature = async (req, res) => {
   try {
     const { id } = req.params;
@@ -120,10 +103,6 @@ export const updateFeature = async (req, res) => {
   }
 };
 
-/**
- * Delete feature
- * DELETE /api/features/:id
- */
 export const deleteFeature = async (req, res) => {
   try {
     const { id } = req.params;
@@ -143,10 +122,6 @@ export const deleteFeature = async (req, res) => {
   }
 };
 
-/**
- * Generate features from SRS using AI
- * POST /api/projects/:projectId/generate-features
- */
 export const generateFeatures = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -170,10 +145,6 @@ export const generateFeatures = async (req, res) => {
   }
 };
 
-/**
- * Bulk create features
- * POST /api/features/bulk
- */
 export const bulkCreateFeatures = async (req, res) => {
   try {
     const { projectId, features } = req.body;
@@ -202,4 +173,3 @@ export const bulkCreateFeatures = async (req, res) => {
     });
   }
 };
-
