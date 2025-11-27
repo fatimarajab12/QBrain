@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import authRouter from "./routes/auth.routes.js";
 import { emailService } from "./utils/emailService.js";
 import projectsRouter from "./routes/projects.routes.js";
+import testCasesRouter from "./routes/testCases.routes.js";
 dotenv.config();
 const app = express();
 connectDB();
@@ -23,5 +24,6 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/projects", projectsRouter);
+app.use("/api/test-cases", testCasesRouter);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

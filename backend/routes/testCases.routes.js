@@ -9,7 +9,11 @@ router.get("/projects/:projectId/test-cases", testCasesController.getProjectTest
 
 router.post("/features/:featureId/generate-test-cases", testCasesController.generateTestCases);
 
+router.post("/features/:featureId", testCasesController.createTestCaseForFeature);
+
 router.post("/bulk", testCasesController.bulkCreateTestCases);
+
+router.get("/:id/check", testCasesController.checkTestCaseExists);
 
 router.get("/:id", testCasesController.getTestCase);
 

@@ -23,13 +23,11 @@ const testCaseSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Feature",
       required: true,
-      index: true,
     },
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Project",
       required: true,
-      index: true,
     },
     steps: {
       type: [String],
@@ -86,9 +84,10 @@ const testCaseSchema = new mongoose.Schema(
   }
 );
 
+// Indexes (removed duplicate index: true from schema fields above)
 testCaseSchema.index({ featureId: 1, status: 1 });
 testCaseSchema.index({ projectId: 1 });
-testCaseSchema.index({ testCaseId: 1 });
+testCaseSchema.index({ testCaseId: 1 }, { unique: true });
 testCaseSchema.index({ priority: 1 });
 
 testCaseSchema.set("toJSON", { virtuals: true });
