@@ -83,11 +83,23 @@ export const getTestCase = async (req, res) => {
     const testCase = await testCaseService.getTestCaseById(id);
 
     if (!testCase) {
-      return res.status(404).json({
-        success: false,
-        message: "Test case not found",
-        exists: false,
-      });
+      // If test case not found, try to get test cases by feature ID
+      try {
+        const testCases = await testCaseService.getFeatureTestCases(id);
+        return res.status(200).json({
+          success: true,
+          count: testCases.length,
+          data: testCases,
+          message: `Found ${testCases.length} test cases for feature`,
+        });
+      } catch (featureError) {
+        // If feature lookup also fails, return original 404
+        return res.status(404).json({
+          success: false,
+          message: "Test case not found",
+          exists: false,
+        });
+      }
     }
 
     res.status(200).json({
@@ -169,7 +181,6 @@ export const getProjectTestCases = async (req, res) => {
   } catch (error) {
     console.error("Get project test cases error:", error);
     
-    // Handle specific error cases
     if (error.message === "Project not found") {
       return res.status(404).json({
         success: false,
@@ -198,7 +209,6 @@ export const updateTestCase = async (req, res) => {
       });
     }
 
-    // Remove fields that should not be updated
     const { testCaseId, _id, createdAt, __v, ...allowedUpdates } = updateData;
 
     if (Object.keys(allowedUpdates).length === 0) {
@@ -225,7 +235,6 @@ export const updateTestCase = async (req, res) => {
   } catch (error) {
     console.error("Update test case error:", error);
     
-    // Handle validation errors
     if (error.name === "ValidationError") {
       return res.status(400).json({
         success: false,
@@ -235,7 +244,6 @@ export const updateTestCase = async (req, res) => {
       });
     }
 
-    // Handle cast errors
     if (error.name === "CastError") {
       return res.status(400).json({
         success: false,

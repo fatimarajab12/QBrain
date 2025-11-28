@@ -1,12 +1,23 @@
+import mongoose from "mongoose";
 import { Project } from "../models/Project.js";
 import { vectorStore } from "../vector/vectorStore.js";
 import { generateEmbeddingsBatch } from "../ai/embeddings.js";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { Document } from "@langchain/core/documents";
 import fs from "fs";
-import { v4 as uuidv4 } from "uuid";
 import * as featureService from "./featureService.js";
 import * as testCaseService from "./testCaseService.js";
+
+
+function validateObjectId(id, fieldName = "ID") {
+  if (!id) return null;
+  
+  if (mongoose.Types.ObjectId.isValid(id) && id.toString().length === 24) {
+    return id;
+  }
+  
+  throw new Error(`Invalid ${fieldName}: Must be a valid MongoDB ObjectId (24 hex characters)`);
+}
 
 /**
  * Calculates the optimal number of context chunks for downstream LLM calls.
@@ -17,10 +28,7 @@ const { min = 10, max = 40, percent = 0.2 } = options;
 }
 
 export async function createProject(projectData) {
-  const projectId = `project_${uuidv4().slice(0, 13)}`;
-
   const project = new Project({
-    projectId,
     name: projectData.name,
     description: projectData.description || "",
     userId: projectData.userId,
@@ -54,7 +62,7 @@ export async function getProjectStats(id) {
   if (!project) throw new Error("Project not found");
 
   return {
-    projectId: project.projectId,
+    projectId: project._id.toString(),
     name: project.name,
     status: project.status,
     srsDocument: project.srsDocument,
@@ -64,8 +72,12 @@ export async function getProjectStats(id) {
 export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   console.log(`Starting SRS processing for project: ${projectId}`);
 
-  const project = await Project.findOne({ projectId });
+  const id = validateObjectId(projectId, "Project ID");
+
+  const project = await Project.findById(id);
   if (!project) throw new Error("Project not found");
+  
+  const projectIdString = project._id.toString();
 
   let text = "";
   if (filePath.endsWith(".pdf")) {
@@ -150,7 +162,7 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
       new Document({
         pageContent: chunk,
         metadata: {
-          projectId,
+          projectId: projectIdString,
           source: "SRS",
           fileName,
           chunkIndex: idx,
@@ -162,7 +174,7 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   console.log(
     `Adding ${documents.length} documents to vectorStore for project ${projectId}`
   );
-  await vectorStore.addDocuments(project.projectId, documents, embeddings);
+  await vectorStore.addDocuments(projectIdString, documents, embeddings);
   console.log(`Documents successfully added to vectorStore`);
 
   project.srsDocument = {
@@ -207,7 +219,6 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
           `Error generating test cases for feature ${feature.name}:`,
           error.message
         );
-        // Continue with other features even if one fails
       }
     }
     console.log(`Total test cases generated: ${testCasesGenerated}`);

@@ -3,47 +3,39 @@ import { TestCase } from "../models/TestCase.js";
 import { Feature } from "../models/Feature.js";
 import { Project } from "../models/Project.js";
 import { generateTestCasesFromRAG } from "../ai/ragService.js";
-import { nanoid } from "nanoid";
+
+
+function validateObjectId(id, fieldName = "ID") {
+  if (!id) return null;
+  
+  if (mongoose.Types.ObjectId.isValid(id) && id.toString().length === 24) {
+    return id;
+  }
+  
+  throw new Error(`Invalid ${fieldName}: Must be a valid MongoDB ObjectId (24 hex characters)`);
+}
 
 export async function createTestCase(testCaseData) {
   try {
-    // If projectId is not provided, get it from feature
-    if (!testCaseData.projectId && testCaseData.featureId) {
-      // Check if featureId is a valid ObjectId
-      const isValidObjectId = mongoose.Types.ObjectId.isValid(testCaseData.featureId) && 
-                               testCaseData.featureId.toString().length === 24;
+    if (testCaseData.featureId) {
+      testCaseData.featureId = validateObjectId(testCaseData.featureId, "Feature ID");
       
-      let feature;
-      if (isValidObjectId) {
-        // If it's a valid ObjectId, try both _id and featureId
-        feature = await Feature.findOne({
-          $or: [{ _id: testCaseData.featureId }, { featureId: testCaseData.featureId }],
-        }).select("projectId");
-      } else {
-        // If not a valid ObjectId (like "feature_123"), search only by featureId field
-        feature = await Feature.findOne({ featureId: testCaseData.featureId }).select("projectId");
-      }
-      
+      const feature = await Feature.findById(testCaseData.featureId).select("projectId");
       if (!feature) {
         throw new Error("Feature not found");
       }
       
-      // Convert featureId to ObjectId (_id) for saving
-      testCaseData.featureId = feature._id;
-      testCaseData.projectId = feature.projectId;
-    } else if (testCaseData.featureId) {
-      // If projectId is provided but featureId is still a string, convert it
-      const isValidObjectId = mongoose.Types.ObjectId.isValid(testCaseData.featureId) && 
-                               testCaseData.featureId.toString().length === 24;
+      if (!testCaseData.projectId) {
+        testCaseData.projectId = feature.projectId;
+      }
+    }
+
+    if (testCaseData.projectId) {
+      testCaseData.projectId = validateObjectId(testCaseData.projectId, "Project ID");
       
-      if (!isValidObjectId) {
-        // Find feature to get its _id
-        const feature = await Feature.findOne({ featureId: testCaseData.featureId }).select("_id");
-        if (feature) {
-          testCaseData.featureId = feature._id;
-        } else {
-          throw new Error("Feature not found");
-        }
+      const project = await Project.findById(testCaseData.projectId).select("_id");
+      if (!project) {
+        throw new Error("Project not found");
       }
     }
 
@@ -55,10 +47,8 @@ export async function createTestCase(testCaseData) {
       throw new Error("Feature ID is required.");
     }
 
-    const testCaseId = `test_${nanoid(10)}`;
     const testCase = new TestCase({
       ...testCaseData,
-      testCaseId,
       isAIGenerated: false, // Explicitly mark as manual creation
     });
 
@@ -72,11 +62,11 @@ export async function createTestCase(testCaseData) {
 
 export async function getTestCaseById(testCaseId) {
   try {
-    const testCase = await TestCase.findOne({
-      $or: [{ _id: testCaseId }, { testCaseId }],
-    })
-      .populate("featureId", "name featureId")
-      .populate("projectId", "name projectId")
+    const id = validateObjectId(testCaseId, "Test Case ID");
+
+    const testCase = await TestCase.findById(id)
+      .populate("featureId", "_id name description")
+      .populate("projectId", "_id name")
       .lean();
 
     return testCase;
@@ -88,15 +78,14 @@ export async function getTestCaseById(testCaseId) {
 
 export async function getFeatureTestCases(featureId) {
   try {
-    const feature = await Feature.findOne({
-      $or: [{ _id: featureId }, { featureId }],
-    });
-
+    const id = validateObjectId(featureId, "Feature ID");
+    
+    const feature = await Feature.findById(id).select("_id");
     if (!feature) {
       throw new Error("Feature not found");
     }
 
-    const testCases = await TestCase.find({ featureId: feature._id }).sort({
+    const testCases = await TestCase.find({ featureId: id }).sort({
       priority: -1,
       createdAt: -1,
     });
@@ -110,27 +99,15 @@ export async function getFeatureTestCases(featureId) {
 
 export async function getProjectTestCases(projectId, filters = {}) {
   try {
-    // Check if projectId is a valid ObjectId (24 hex characters)
-    const isValidObjectId = mongoose.Types.ObjectId.isValid(projectId) && projectId.toString().length === 24;
+    const id = validateObjectId(projectId, "Project ID");
     
-    let project;
-    if (isValidObjectId) {
-      // If it's a valid ObjectId, try both _id and projectId
-      project = await Project.findOne({
-        $or: [{ _id: projectId }, { projectId }],
-      });
-    } else {
-      // If not a valid ObjectId (like "project_38c17371-e7e9"), search only by projectId field
-      project = await Project.findOne({ projectId });
-    }
-
+    const project = await Project.findById(id).select("_id");
     if (!project) {
       throw new Error("Project not found");
     }
 
-    const query = { projectId: project._id };
+    const query = { projectId: id };
     
-    // Add optional filters
     if (filters.status) {
       query.status = filters.status;
     }
@@ -138,17 +115,13 @@ export async function getProjectTestCases(projectId, filters = {}) {
       query.priority = filters.priority;
     }
     if (filters.featureId) {
-      const feature = await Feature.findOne({
-        $or: [{ _id: filters.featureId }, { featureId: filters.featureId }],
-      });
-      if (feature) {
-        query.featureId = feature._id;
-      }
+      const featureId = validateObjectId(filters.featureId, "Feature ID");
+      query.featureId = featureId;
     }
 
     const testCases = await TestCase.find(query)
-      .populate("featureId", "name featureId description")
-      .populate("projectId", "name projectId")
+      .populate("featureId", "_id name description")
+      .populate("projectId", "_id name")
       .select("-__v")
       .sort({
         priority: -1,
@@ -156,26 +129,21 @@ export async function getProjectTestCases(projectId, filters = {}) {
       })
       .lean();
 
-    // Clean up the response - remove unnecessary fields
     const cleanedTestCases = testCases.map((tc) => {
       const cleaned = { ...tc };
-      // Remove MongoDB internal fields
       delete cleaned.__v;
-      // Ensure featureId is properly formatted
+      
       if (cleaned.featureId && typeof cleaned.featureId === 'object') {
         cleaned.featureId = {
           _id: cleaned.featureId._id,
           name: cleaned.featureId.name,
-          featureId: cleaned.featureId.featureId,
           description: cleaned.featureId.description,
         };
       }
-      // Ensure projectId is properly formatted
       if (cleaned.projectId && typeof cleaned.projectId === 'object') {
         cleaned.projectId = {
           _id: cleaned.projectId._id,
           name: cleaned.projectId.name,
-          projectId: cleaned.projectId.projectId,
         };
       }
       return cleaned;
@@ -190,47 +158,40 @@ export async function getProjectTestCases(projectId, filters = {}) {
 
 export async function updateTestCase(testCaseId, updateData) {
   try {
-    // Check if testCaseId is a valid ObjectId
-    const isValidObjectId = mongoose.Types.ObjectId.isValid(testCaseId) && 
-                             testCaseId.toString().length === 24;
+    const id = validateObjectId(testCaseId, "Test Case ID");
 
-    let query;
-    if (isValidObjectId) {
-      query = { $or: [{ _id: testCaseId }, { testCaseId }] };
-    } else {
-      query = { testCaseId };
-    }
-
-    // If featureId is being updated and it's a string, convert it to ObjectId
-    if (updateData.featureId && typeof updateData.featureId === 'string') {
-      const isValidFeatureObjectId = mongoose.Types.ObjectId.isValid(updateData.featureId) && 
-                                      updateData.featureId.toString().length === 24;
+    if (updateData.featureId) {
+      updateData.featureId = validateObjectId(updateData.featureId, "Feature ID");
       
-      if (!isValidFeatureObjectId) {
-        // Find feature by featureId string to get its _id
-        const feature = await Feature.findOne({ featureId: updateData.featureId }).select("_id projectId");
-        if (feature) {
-          updateData.featureId = feature._id;
-          // Also update projectId if not provided
-          if (!updateData.projectId) {
-            updateData.projectId = feature.projectId;
-          }
-        } else {
-          throw new Error("Feature not found");
-        }
+      const feature = await Feature.findById(updateData.featureId).select("projectId");
+      if (!feature) {
+        throw new Error("Feature not found");
+      }
+      
+      if (!updateData.projectId) {
+        updateData.projectId = feature.projectId;
       }
     }
 
-    const testCase = await TestCase.findOneAndUpdate(
-      query,
+    if (updateData.projectId) {
+      updateData.projectId = validateObjectId(updateData.projectId, "Project ID");
+      
+      const project = await Project.findById(updateData.projectId).select("_id");
+      if (!project) {
+        throw new Error("Project not found");
+      }
+    }
+
+    const testCase = await TestCase.findByIdAndUpdate(
+      id,
       { $set: updateData },
       { 
         new: true, 
         runValidators: true,
       }
     )
-    .populate("featureId", "name featureId description")
-    .populate("projectId", "name projectId");
+    .populate("featureId", "_id name description")
+    .populate("projectId", "_id name");
 
     return testCase;
   } catch (error) {
@@ -241,9 +202,12 @@ export async function updateTestCase(testCaseId, updateData) {
 
 export async function deleteTestCase(testCaseId) {
   try {
-    await TestCase.findOneAndDelete({
-      $or: [{ _id: testCaseId }, { testCaseId }],
-    });
+    const id = validateObjectId(testCaseId, "Test Case ID");
+
+    const testCase = await TestCase.findByIdAndDelete(id);
+    if (!testCase) {
+      return { success: false, message: "Test case not found" };
+    }
 
     return { success: true };
   } catch (error) {
@@ -254,10 +218,9 @@ export async function deleteTestCase(testCaseId) {
 
 export async function generateTestCasesForFeature(featureId, options = {}) {
   try {
-    const feature = await Feature.findOne({
-      $or: [{ _id: featureId }, { featureId }],
-    }).populate("projectId");
+    const id = validateObjectId(featureId, "Feature ID");
 
+    const feature = await Feature.findById(id).populate("projectId");
     if (!feature) {
       throw new Error("Feature not found");
     }
@@ -270,7 +233,7 @@ export async function generateTestCasesForFeature(featureId, options = {}) {
     const featureDescription = `${feature.name}\n\n${feature.description}\n\nAcceptance Criteria: ${feature.acceptanceCriteria?.join(", ") || "N/A"}`;
 
     const generatedTestCases = await generateTestCasesFromRAG(
-      project.projectId,
+      project._id.toString(),
       featureDescription,
       options
     );
@@ -296,20 +259,17 @@ export async function generateTestCasesForFeature(featureId, options = {}) {
 
 export async function bulkCreateTestCases(featureId, testCasesData) {
   try {
-    const feature = await Feature.findOne({
-      $or: [{ _id: featureId }, { featureId }],
-    }).populate("projectId");
+    const id = validateObjectId(featureId, "Feature ID");
 
+    const feature = await Feature.findById(id).populate("projectId");
     if (!feature) {
       throw new Error("Feature not found");
     }
 
     const testCases = [];
     for (const testCaseData of testCasesData) {
-      const testCaseId = `test_${nanoid(10)}`;
       const testCase = new TestCase({
         ...testCaseData,
-        testCaseId,
         featureId: feature._id,
         projectId: feature.projectId._id,
       });

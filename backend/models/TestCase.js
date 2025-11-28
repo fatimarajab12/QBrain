@@ -2,12 +2,6 @@ import mongoose from "mongoose";
 
 const testCaseSchema = new mongoose.Schema(
   {
-    testCaseId: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
     title: {
       type: String,
       required: [true, "Test case title is required"],
@@ -84,12 +78,9 @@ const testCaseSchema = new mongoose.Schema(
   }
 );
 
-// Indexes (removed duplicate index: true from schema fields above)
 testCaseSchema.index({ featureId: 1, status: 1 });
 testCaseSchema.index({ projectId: 1 });
-testCaseSchema.index({ testCaseId: 1 }, { unique: true });
 testCaseSchema.index({ priority: 1 });
-
 testCaseSchema.set("toJSON", { virtuals: true });
 testCaseSchema.set("toObject", { virtuals: true });
 

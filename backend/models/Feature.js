@@ -2,12 +2,6 @@ import mongoose from "mongoose";
 
 const featureSchema = new mongoose.Schema(
   {
-    featureId: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
     name: {
       type: String,
       required: [true, "Feature name is required"],
@@ -59,7 +53,6 @@ const featureSchema = new mongoose.Schema(
 );
 
 featureSchema.index({ projectId: 1, status: 1 });
-featureSchema.index({ featureId: 1 });
 featureSchema.index({ priority: 1 });
 
 featureSchema.virtual("testCasesCount", {

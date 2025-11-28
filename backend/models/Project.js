@@ -2,10 +2,6 @@ import mongoose from "mongoose";
 
 const projectSchema = new mongoose.Schema(
   {
-    projectId: {
-      type: String,
-      required: true,
-    },
     name: {
       type: String,
       required: true,
@@ -39,7 +35,6 @@ const projectSchema = new mongoose.Schema(
   }
 );
 
-projectSchema.index({ projectId: 1 }, { unique: true });
 projectSchema.index({ userId: 1 });
 projectSchema.index({ status: 1 });
 

@@ -1,14 +1,23 @@
+import mongoose from "mongoose";
 import { Feature } from "../models/Feature.js";
 import { Project } from "../models/Project.js";
 import { generateFeaturesFromRAG } from "../ai/ragService.js";
-import { nanoid } from "nanoid";
+
+
+function validateObjectId(id, fieldName = "ID") {
+  if (!id) return null;
+  
+  if (mongoose.Types.ObjectId.isValid(id) && id.toString().length === 24) {
+    return id;
+  }
+  
+  throw new Error(`Invalid ${fieldName}: Must be a valid MongoDB ObjectId (24 hex characters)`);
+}
 
 export async function createFeature(featureData) {
   try {
-    const featureId = `feature_${nanoid(10)}`;
     const feature = new Feature({
       ...featureData,
-      featureId,
     });
 
     await feature.save();
@@ -21,10 +30,10 @@ export async function createFeature(featureData) {
 
 export async function getFeatureById(featureId) {
   try {
-    const feature = await Feature.findOne({
-      $or: [{ _id: featureId }, { featureId }],
-    })
-      .populate("projectId", "name projectId")
+    const id = validateObjectId(featureId, "Feature ID");
+
+    const feature = await Feature.findById(id)
+      .populate("projectId", "_id name")
       .lean();
 
     return feature;
@@ -36,18 +45,19 @@ export async function getFeatureById(featureId) {
 
 export async function getProjectFeatures(projectId) {
   try {
-    const project = await Project.findOne({
-      $or: [{ _id: projectId }, { projectId }],
-    });
-
+    const id = validateObjectId(projectId, "Project ID");
+    
+    const project = await Project.findById(id).select("_id");
     if (!project) {
       throw new Error("Project not found");
     }
 
-    const features = await Feature.find({ projectId: project._id }).sort({
-      priority: -1,
-      createdAt: -1,
-    });
+    const features = await Feature.find({ projectId: id })
+      .sort({
+        priority: -1,
+        createdAt: -1,
+      })
+      .lean();
 
     return features;
   } catch (error) {
@@ -58,8 +68,19 @@ export async function getProjectFeatures(projectId) {
 
 export async function updateFeature(featureId, updateData) {
   try {
-    const feature = await Feature.findOneAndUpdate(
-      { $or: [{ _id: featureId }, { featureId }] },
+    const id = validateObjectId(featureId, "Feature ID");
+
+    if (updateData.projectId) {
+      updateData.projectId = validateObjectId(updateData.projectId, "Project ID");
+      
+      const project = await Project.findById(updateData.projectId).select("_id");
+      if (!project) {
+        throw new Error("Project not found");
+      }
+    }
+
+    const feature = await Feature.findByIdAndUpdate(
+      id,
       { $set: updateData },
       { new: true, runValidators: true }
     );
@@ -73,17 +94,14 @@ export async function updateFeature(featureId, updateData) {
 
 export async function deleteFeature(featureId) {
   try {
-    const feature = await Feature.findOne({
-      $or: [{ _id: featureId }, { featureId }],
-    });
+    const id = validateObjectId(featureId, "Feature ID");
 
-    if (feature) {
-
-      const { TestCase } = await import("../models/TestCase.js");
-
-      await TestCase.deleteMany({ featureId: feature._id });
-
-      await Feature.findByIdAndDelete(feature._id);
+    const { TestCase } = await import("../models/TestCase.js");
+    await TestCase.deleteMany({ featureId: id });
+    
+    const feature = await Feature.findByIdAndDelete(id);
+    if (!feature) {
+      return { success: false, message: "Feature not found" };
     }
 
     return { success: true };
@@ -95,10 +113,9 @@ export async function deleteFeature(featureId) {
 
 export async function generateFeaturesFromSRS(projectId, options = {}) {
   try {
-    const project = await Project.findOne({
-      $or: [{ _id: projectId }, { projectId }],
-    });
+    const id = validateObjectId(projectId, "Project ID");
 
+    const project = await Project.findById(id);
     if (!project) {
       throw new Error("Project not found");
     }
@@ -107,13 +124,13 @@ export async function generateFeaturesFromSRS(projectId, options = {}) {
       throw new Error("SRS document not processed. Please upload and process SRS first.");
     }
 
-    const generatedFeatures = await generateFeaturesFromRAG(project.projectId, options);
+    const generatedFeatures = await generateFeaturesFromRAG(project._id.toString(), options);
 
     const savedFeatures = [];
     for (const featureData of generatedFeatures) {
       const feature = await createFeature({
         ...featureData,
-        projectId: project._id,
+        projectId: id,
         isAIGenerated: true,
         aiGenerationContext: JSON.stringify(options),
       });
@@ -129,21 +146,18 @@ export async function generateFeaturesFromSRS(projectId, options = {}) {
 
 export async function bulkCreateFeatures(projectId, featuresData) {
   try {
-    const project = await Project.findOne({
-      $or: [{ _id: projectId }, { projectId }],
-    });
-
+    const id = validateObjectId(projectId, "Project ID");
+    
+    const project = await Project.findById(id).select("_id");
     if (!project) {
       throw new Error("Project not found");
     }
 
     const features = [];
     for (const featureData of featuresData) {
-      const featureId = `feature_${nanoid(10)}`;
       const feature = new Feature({
         ...featureData,
-        featureId,
-        projectId: project._id,
+        projectId: id,
       });
       await feature.save();
       features.push(feature);
