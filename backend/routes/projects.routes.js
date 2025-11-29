@@ -9,6 +9,8 @@ router.get("/", projectsController.getUserProjects);
 
 router.get("/:id/stats", projectsController.getProjectStats);
 
+router.get("/:id/test-cases-count", projectsController.getTestCasesCount);
+
 router.post(
   "/:id/upload-srs",
   projectsController.upload.single("srs"),

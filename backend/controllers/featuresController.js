@@ -173,3 +173,30 @@ export const bulkCreateFeatures = async (req, res) => {
     });
   }
 };
+
+export const getTestCasesCount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await featureService.getTestCasesCount(id);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error("Get test cases count error:", error);
+    
+    if (error.message === "Feature not found") {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Error getting test cases count",
+      error: error.message,
+    });
+  }
+};

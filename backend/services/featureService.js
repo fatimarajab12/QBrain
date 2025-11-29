@@ -169,3 +169,27 @@ export async function bulkCreateFeatures(projectId, featuresData) {
     throw error;
   }
 }
+
+export async function getTestCasesCount(featureId) {
+  try {
+    const id = validateObjectId(featureId, "Feature ID");
+
+    // Check if feature exists
+    const feature = await Feature.findById(id).select("_id");
+    if (!feature) {
+      throw new Error("Feature not found");
+    }
+
+    // Count test cases for this feature
+    const { TestCase } = await import("../models/TestCase.js");
+    const count = await TestCase.countDocuments({ featureId: id });
+
+    return {
+      featureId: id,
+      testCasesCount: count,
+    };
+  } catch (error) {
+    console.error("Error getting test cases count:", error);
+    throw error;
+  }
+}

@@ -9,6 +9,8 @@ router.post("/projects/:projectId/generate-features", featuresController.generat
 
 router.post("/bulk", featuresController.bulkCreateFeatures);
 
+router.get("/:id/test-cases-count", featuresController.getTestCasesCount);
+
 router.get("/:id", featuresController.getFeature);
 
 router.post("/", featuresController.createFeature);

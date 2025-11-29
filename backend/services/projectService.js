@@ -69,6 +69,30 @@ export async function getProjectStats(id) {
   };
 }
 
+export async function getTestCasesCount(projectId) {
+  try {
+    const id = validateObjectId(projectId, "Project ID");
+
+    // Check if project exists
+    const project = await Project.findById(id).select("_id");
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    // Count test cases for this project
+    const { TestCase } = await import("../models/TestCase.js");
+    const count = await TestCase.countDocuments({ projectId: id });
+
+    return {
+      projectId: id,
+      testCasesCount: count,
+    };
+  } catch (error) {
+    console.error("Error getting test cases count:", error);
+    throw error;
+  }
+}
+
 export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   console.log(`Starting SRS processing for project: ${projectId}`);
 

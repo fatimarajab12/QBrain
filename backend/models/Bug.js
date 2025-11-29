@@ -75,6 +75,16 @@ const bugSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    discoveredDuring: {
+      type: String,
+      enum: ["testing", "development", "production", "code_review", "other"],
+      default: "testing",
+    },
+    notes: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     attachments: {
       type: [String],
       default: [],
