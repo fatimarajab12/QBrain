@@ -2,14 +2,22 @@ import { vectorStore } from "../vector/vectorStore.js";
 import { ChatOpenAI } from "@langchain/openai";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+/** */
 import {
   ChatPromptTemplate,
   SystemMessagePromptTemplate,
   HumanMessagePromptTemplate,
   PromptTemplate,
 } from "@langchain/core/prompts";
-import { getEmbeddings } from "./embeddings.js";
 
+import { getEmbeddings } from "./embeddings.js";
+/**
+ * 
+ Cleans the raw LLM output and extracts only the JSON portion — removing:
+- Markdown code blocks
+- Extra whitespace
+- Random text the LLM may add
+ */
 function extractJSON(text) {
   if (!text || typeof text !== "string") return text;
 
@@ -66,6 +74,7 @@ Please provide a helpful answer based on the context above.`;
     const chatPrompt = ChatPromptTemplate.fromMessages([
       SystemMessagePromptTemplate.fromTemplate(systemTemplate),
       HumanMessagePromptTemplate.fromTemplate(userTemplate),
+      
     ]);
 
     const combineDocsChain = await createStuffDocumentsChain({
@@ -111,7 +120,9 @@ export async function getRAGContext(projectId, query, nResults = 5) {
 
 export async function generateFeaturesFromRAG(projectId, options = {}) {
   try {
-    const { nContextChunks = 10, model = "gpt-4o-mini" } = options;
+    // Ensure options is an object
+    const safeOptions = options && typeof options === 'object' ? options : {};
+    const { nContextChunks = 10, model = "gpt-4o-mini" } = safeOptions;
 
     const contextChunks = await getRAGContext(
       projectId,
@@ -169,7 +180,9 @@ export async function generateTestCasesFromRAG(
   options = {}
 ) {
   try {
-    const { nContextChunks = 5, model = "gpt-4o-mini" } = options;
+    // Ensure options is an object
+    const safeOptions = options && typeof options === 'object' ? options : {};
+    const { nContextChunks = 5, model = "gpt-4o-mini" } = safeOptions;
 
     const contextChunks = await getRAGContext(
       projectId,

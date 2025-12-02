@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import Orb from "../components/custom/Orb";
 import RotatingText from '../components/ui/rotation-text';
 import MagicBento from '../components/ui/Magic-Bento';
+import Logo from "@/components/Logo";
 
 const Index = () => {
   return (
@@ -11,14 +12,7 @@ const Index = () => {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">QA</span>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 text-transparent bg-clip-text">
-              QA Assistant
-            </span>
-          </div>
+          <Logo size={40} showText={true} textSize="lg" />
           <div className="flex items-center gap-4">
             <Link to="/login">
               <Button variant="ghost" className="hover:bg-cyan-500/10">
@@ -136,12 +130,12 @@ const Index = () => {
       <footer className="border-t border-border py-12 px-4 relative z-10 bg-background/50 backdrop-blur-sm">
         <div className="container mx-auto text-center">
           <div className="mb-4">
-            <div className="h-10 w-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl mx-auto mb-3 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <span className="text-white font-bold text-sm">QA</span>
+            <div className="mx-auto mb-3 flex items-center justify-center">
+              <Logo size={48} />
             </div>
           </div>
           <p className="text-muted-foreground">
-            © 2024 QA Assistant. Powered by AI to make testing smarter.
+            © 2024 QBrain. Powered by AI to make testing smarter.
           </p>
         </div>
       </footer>

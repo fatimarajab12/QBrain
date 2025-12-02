@@ -1,5 +1,5 @@
 import { queryRAG, getRAGContext } from "../ai/ragService.js";
-import { vectorDB } from "../vector/vectorDB.js";
+import { vectorStore } from "../vector/vectorStore.js";
 
 export const queryAI = async (req, res) => {
   try {
@@ -68,11 +68,30 @@ export const getVectorInfo = async (req, res) => {
   try {
     const { projectId } = req.params;
 
-    const info = await vectorDB.getCollectionInfo(projectId);
+    // Get vector info from vectorStore
+    await vectorStore.ensureInitialized();
+    const { data, error } = await vectorStore.client
+      .from('project_vectors')
+      .select('*', { count: 'exact', head: false })
+      .eq('project_id', projectId)
+      .limit(1);
+
+    if (error) {
+      throw error;
+    }
+
+    const { count } = await vectorStore.client
+      .from('project_vectors')
+      .select('*', { count: 'exact', head: true })
+      .eq('project_id', projectId);
 
     res.status(200).json({
       success: true,
-      data: info,
+      data: {
+        projectId,
+        vectorCount: count || 0,
+        hasVectors: (count || 0) > 0,
+      },
     });
   } catch (error) {
     console.error("Get vector info error:", error);

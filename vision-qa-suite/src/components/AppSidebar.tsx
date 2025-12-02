@@ -1,4 +1,4 @@
-import { Home, TestTube, Bug, ImageIcon, BarChart3, User, FolderKanban, Sparkles } from "lucide-react";
+import { User, FolderKanban } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar,
@@ -10,15 +10,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import Logo from "@/components/Logo";
 
 const navItems = [
   { title: "Projects", url: "/dashboard", icon: FolderKanban },
-  { title: "Test Generator", url: "/test-generator", icon: TestTube },
-  { title: "Bug Analyzer", url: "/bug-analyzer", icon: Bug },
-  { title: "Profile", url: "/profile", icon: User },
 ];
+
+const profileItem = { title: "Profile", url: "/profile", icon: User };
 
 export function AppSidebar() {
   const { open } = useSidebar();
@@ -28,17 +29,10 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Logo Section */}
         <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-lg  flex items-center justify-center flex-shrink-0     ">
-
-              <img src="../../public/2_Nero_AI_Background_Remover.png"  alt="" />
-
-            </div>
-            {open && <span className="text-lg font-bold">QA Assistant</span>}
-          </div>
+          <Logo size={40} showText={open} textSize="md" />
         </div>
 
-        <SidebarGroup>
+        <SidebarGroup className="flex-1">
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -62,6 +56,27 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Profile at bottom */}
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <NavLink
+                  to={profileItem.url}
+                  className={({ isActive }) =>
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted"
+                  }
+                >
+                  <profileItem.icon className="h-4 w-4" />
+                  <span>{profileItem.title}</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
       </SidebarContent>
     </Sidebar>
   );

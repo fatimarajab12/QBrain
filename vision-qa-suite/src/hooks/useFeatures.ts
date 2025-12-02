@@ -93,6 +93,48 @@ export const useFeatures = (projectId?: string) => {
     }
   };
 
+  const updateFeature = async (featureId: number, featureData: { name: string; description: string }) => {
+    try {
+      const updatedFeature = await featureService.updateFeature(featureId, featureData);
+      setFeatures(prev => prev.map(feature => 
+        feature.id === updatedFeature.id ? updatedFeature : feature
+      ));
+
+      toast({
+        title: "Success",
+        description: "Feature updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating feature:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update feature",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const deleteFeature = async (featureId: number) => {
+    try {
+      await featureService.deleteFeature(featureId);
+      setFeatures(prev => prev.filter(feature => feature.id !== featureId));
+
+      toast({
+        title: "Success",
+        description: "Feature deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting feature:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete feature",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   // Helper function for text extraction (simplified version)
   const extractTextFromFile = async (file: File): Promise<string> => {
     // This is a simplified version - in production you'd use proper libraries
@@ -177,6 +219,8 @@ export const useFeatures = (projectId?: string) => {
     fetchFeatures,
     createFeature,
     updateFeatureStatus,
+    updateFeature,
+    deleteFeature,
     generateFeaturesFromAI,
   };
 };

@@ -34,7 +34,7 @@ export const useAuth = () => {
 
       toast({
         title: "Login Successful",
-        description: "Welcome back to QA Assistant!",
+        description: "Welcome back to QBrain!",
       });
 
       navigate("/dashboard");
@@ -62,10 +62,24 @@ export const useAuth = () => {
       authStorage.setUser(response.user);
       setUser(response.user);
 
-      toast({
-        title: "Account Created",
-        description: "Welcome to QA Assistant! Your account has been created successfully.",
-      });
+      // Store userId if available
+      if (response.user.id) {
+        localStorage.setItem('userId', response.user.id);
+      }
+
+      // Show verification message if token is provided (development mode)
+      if (response.verificationToken) {
+        toast({
+          title: "Account Created",
+          description: `Welcome to QBrain! Please check your email to verify your account. Verification token: ${response.verificationToken}`,
+          duration: 10000,
+        });
+      } else {
+        toast({
+          title: "Account Created",
+          description: "Welcome to QBrain! Please check your email to verify your account.",
+        });
+      }
 
       navigate("/dashboard");
     } catch (err) {

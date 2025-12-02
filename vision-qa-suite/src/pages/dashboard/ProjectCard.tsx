@@ -1,18 +1,38 @@
 // pages/dashboard/components/ProjectCard.tsx
 import { FolderKanban } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
 import { Project } from "@/types/project";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface ProjectCardProps {
   project: Project;
+  onDelete?: (projectId: string | number) => void;
 }
 
-const ProjectCard = ({ project }: ProjectCardProps) => {
+const ProjectCard = ({ project, onDelete }: ProjectCardProps) => {
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(project.id);
+    }
+  };
+
   return (
-    <Link to={`/projects/${project.id}`}>
-      <Card className="shadow-soft border-border hover:shadow-lg transition-shadow cursor-pointer h-full">
+    <Card className="shadow-soft border-border hover:shadow-lg transition-shadow h-full relative group">
+      <Link to={`/projects/${project.id}`} className="block">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -38,9 +58,46 @@ const ProjectCard = ({ project }: ProjectCardProps) => {
             </div>
           </div>
           
+          {/* Delete Button - appears on hover at bottom */}
+          {onDelete && (
+            <div className="pt-2 border-t border-border opacity-0 group-hover:opacity-100 transition-opacity">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full h-8 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{project.name}"? This action cannot be undone and will permanently delete all associated features, test cases, and bugs.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
         </CardContent>
-      </Card>
-    </Link>
+      </Link>
+    </Card>
   );
 };
 

@@ -1,0 +1,37 @@
+@startuml
+title Activity Diagram: RAG Query - Ask AI About Project
+
+|User|
+start
+:Navigate to project page;
+:Enter question about project;
+:Click "Ask AI" button;
+
+|System|
+:Validate project has SRS document;
+if (SRS document exists?) then (no)
+  |User|
+  :Show error: "Please upload SRS document first";
+  stop
+else (yes)
+  |System|
+  :Convert question to embedding vector\n(via OpenAI API);
+  :Search similar chunks in Supabase\n(project_vectors table);
+  :Retrieve top-K relevant documents;
+  if (Relevant chunks found?) then (no)
+    |User|
+    :Show message: "No relevant information found";
+    stop
+  else (yes)
+    |System|
+    :Combine context chunks;
+    :Generate answer using LLM\n(with retrieved context);
+    |User|
+    :Display AI answer;
+    :Option to ask follow-up question;
+    stop
+  endif
+endif
+
+@enduml
+

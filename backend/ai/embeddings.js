@@ -2,8 +2,12 @@ import { OpenAIEmbeddings } from "@langchain/openai";
 
 let embeddingsInstance = null;
 
-function getEmbeddingsInstance(model = "text-embedding-3-small") {
-  if (!embeddingsInstance) {
+// Use the cheapest embedding model: text-embedding-3-small
+// Cost: $0.02 per 1M tokens (vs $0.13 for text-embedding-3-large)
+const DEFAULT_EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
+
+function getEmbeddingsInstance(model = DEFAULT_EMBEDDING_MODEL) {
+  if (!embeddingsInstance || embeddingsInstance.model !== model) {
     embeddingsInstance = new OpenAIEmbeddings({
       model,
       apiKey: process.env.OPENAI_API_KEY,
@@ -12,7 +16,7 @@ function getEmbeddingsInstance(model = "text-embedding-3-small") {
   return embeddingsInstance;
 }
 
-export async function generateEmbedding(text, model = "text-embedding-3-small") {
+export async function generateEmbedding(text, model = DEFAULT_EMBEDDING_MODEL) {
   if (!text || typeof text !== "string" || text.trim().length === 0)
     throw new Error("Text must be a non-empty string");
 
@@ -31,7 +35,7 @@ export async function generateEmbedding(text, model = "text-embedding-3-small") 
   }
 }
 
-export async function generateEmbeddingsBatch(texts, model = "text-embedding-3-small") {
+export async function generateEmbeddingsBatch(texts, model = DEFAULT_EMBEDDING_MODEL) {
   if (!Array.isArray(texts) || texts.length === 0)
     throw new Error("Texts must be a non-empty array");
 
@@ -53,15 +57,15 @@ export async function generateEmbeddingsBatch(texts, model = "text-embedding-3-s
   }
 }
 
-export function getEmbeddingDimensions(model = "text-embedding-3-small") {
+export function getEmbeddingDimensions(model = DEFAULT_EMBEDDING_MODEL) {
   const dims = {
-    "text-embedding-3-small": 1536,
-    "text-embedding-3-large": 3072,
-    "text-embedding-ada-002": 1536,
+    "text-embedding-3-small": 1536,  // Cheapest: $0.02 per 1M tokens
+    "text-embedding-3-large": 3072,  // More expensive: $0.13 per 1M tokens
+    "text-embedding-ada-002": 1536,  // Legacy: $0.10 per 1M tokens
   };
   return dims[model] || 1536;
 }
 
-export function getEmbeddings(model = "text-embedding-3-small") {
+export function getEmbeddings(model = DEFAULT_EMBEDDING_MODEL) {
   return getEmbeddingsInstance(model);
 }

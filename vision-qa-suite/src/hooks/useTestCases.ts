@@ -137,6 +137,62 @@ export const useTestCases = (featureId?: number) => {
     }
   };
 
+  const updateTestCasePriority = async (testCaseId: number, priority: "high" | "medium" | "low") => {
+    try {
+      const updatedTestCase = await testCaseService.updateTestCase(testCaseId, { priority });
+      setTestCases(prev => 
+        prev.map(tc => tc.id === updatedTestCase.id ? updatedTestCase : tc)
+      );
+
+      toast({
+        title: "Priority Updated",
+        description: `Test case priority changed to ${priority}`,
+      });
+    } catch (error) {
+      console.error('Error updating test case priority:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update test case priority",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const generateTestCases = async (options?: any) => {
+    if (!featureId) {
+      toast({
+        title: "Error",
+        description: "Feature ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const generatedTestCases = await testCaseService.generateAITestCases(featureId.toString(), options);
+      setTestCases(prev => [...prev, ...generatedTestCases]);
+      
+      toast({
+        title: "Test Cases Generated",
+        description: `Successfully generated ${generatedTestCases.length} test cases`,
+      });
+      
+      return generatedTestCases;
+    } catch (error: any) {
+      console.error('Error generating test cases:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate test cases",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return {
     testCases,
     isLoading,
@@ -149,5 +205,7 @@ export const useTestCases = (featureId?: number) => {
     updateTestCase,
     deleteTestCase,
     updateTestCaseStatus,
+    updateTestCasePriority,
+    generateTestCases,
   };
 };

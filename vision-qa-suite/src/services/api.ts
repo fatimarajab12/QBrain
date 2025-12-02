@@ -1,11 +1,11 @@
 // services/api.ts - Ready for backend (currently disabled)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export const apiClient = {
   async request(endpoint: string, options: RequestInit = {}) {
     // TODO: Uncomment when backend is ready
     // const url = `${API_BASE_URL}${endpoint}`;
-    // const token = localStorage.getItem('auth_token');
+    // const token = localStorage.getItem('authToken');
 
     // const headers = {
     //   'Content-Type': 'application/json',

@@ -34,7 +34,7 @@ const CreateFeatureDialog = ({ isCreating, onCreate }: CreateFeatureDialogProps)
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button className="gradient-primary">
+        <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25">
           <Plus className="mr-2 h-4 w-4" />
           Add Feature
         </Button>
@@ -68,7 +68,7 @@ const CreateFeatureDialog = ({ isCreating, onCreate }: CreateFeatureDialogProps)
           </div>
           <Button 
             onClick={handleCreate} 
-            className="w-full gradient-primary"
+            className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25"
             disabled={isCreating || !newFeature.name.trim()}
           >
             {isCreating ? (

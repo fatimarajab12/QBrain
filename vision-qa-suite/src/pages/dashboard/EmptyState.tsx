@@ -18,7 +18,7 @@ const EmptyState = ({ onCreateProject }: EmptyStateProps) => {
             Create your first project to start organizing your testing efforts and tracking progress.
           </p>
         </div>
-        <Button onClick={onCreateProject} className="gradient-primary mt-4">
+        <Button onClick={onCreateProject} className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 mt-4">
           <Plus className="mr-2 h-4 w-4" />
           Create Your First Project
         </Button>

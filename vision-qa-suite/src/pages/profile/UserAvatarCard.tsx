@@ -71,7 +71,7 @@ const UserAvatarCard = ({ user, onUserUpdate }: UserAvatarCardProps) => {
             {user.avatar ? (
               <AvatarImage src={user.avatar} alt={user.name} />
             ) : (
-              <AvatarFallback className="text-2xl bg-gradient-primary text-white">
+              <AvatarFallback className="text-2xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white">
                 {getInitials(user)}
               </AvatarFallback>
             )}

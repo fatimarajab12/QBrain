@@ -1,9 +1,11 @@
 // pages/FeatureDetails.tsx
 import { Link } from "react-router-dom";
-import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Search, X, Filter, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTestCases } from "../hooks/useTestCases";
 import TestCaseCard from "./feature-details/TestCaseCard";
 import CreateTestCaseDialog from "./feature-details/CreateTestCaseDialog";
@@ -11,6 +13,9 @@ import EditTestCaseDialog from "./feature-details/EditTestCaseDialog";
 import StatsGrid from "./feature-details/StatsGrid";
 import BugsTab from "./feature-details/BugsTab";
 import { Bug } from "@/types/bug";
+import { bugService } from "@/services/bug.service";
+import { useToast } from "@/hooks/use-toast";
+import { TestCase } from "@/types/test-case";
 
 // Mock bugs data - to be replaced with API calls
 const mockBugs: Bug[] = [
@@ -40,6 +45,7 @@ const mockBugs: Bug[] = [
 
 const FeatureDetails = () => {
   const { projectId, featureId } = useParams();
+  const { toast } = useToast();
 
   const featureIdNum = featureId ? parseInt(featureId, 10) : undefined;
   const projectIdNum = projectId ? parseInt(projectId, 10) : undefined;
@@ -54,11 +60,19 @@ const FeatureDetails = () => {
     updateTestCase,
     deleteTestCase,
     updateTestCaseStatus,
-  } = useTestCases(featureIdNum); ;
+    updateTestCasePriority,
+    generateTestCases,
+  } = useTestCases(featureIdNum);
+  
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const [activeTab, setActiveTab] = useState<"test-cases" | "bugs">("test-cases");
   const [bugs, setBugs] = useState<Bug[]>(mockBugs);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
   // TODO: Fetch bugs from API
   useEffect(() => {
@@ -73,29 +87,6 @@ const featureBugs = bugs.filter(bug =>
   featureId && bug.feature_id.toString() === featureId
 );
 
-  const handleGenerateTestCases = async () => {
-    setIsGeneratingAI(true);
-    try {
-      // TODO: Call AI generation API
-      // await generateTestCasesWithAI(featureId);
-      console.log("Generating test cases with AI for feature:", featureId);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
-
-  const handleGenerateBugs = async () => {
-    setIsGeneratingAI(true);
-    try {
-      // TODO: Call AI generation API
-      // await generateBugsWithAI(featureId);
-      console.log("Generating bugs with AI for feature:", featureId);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
 
 const handleAddBug = (bugData: Omit<Bug, 'id' | 'created_at' | 'updated_at'>) => {
   if (!featureId || !projectId) return;
@@ -109,6 +100,82 @@ const handleAddBug = (bugData: Omit<Bug, 'id' | 'created_at' | 'updated_at'>) =>
     updated_at: new Date().toISOString()
   };
   setBugs(prev => [...prev, newBug]);
+};
+
+const handleUpdateBugStatus = async (bugId: number, status: Bug['status']) => {
+  try {
+    // Update via API
+    await bugService.updateBugStatus(bugId, status);
+    
+    // Update local state
+    setBugs(prev => prev.map(bug => 
+      bug.id === bugId 
+        ? { ...bug, status, updated_at: new Date().toISOString() }
+        : bug
+    ));
+
+    toast({
+      title: "Success",
+      description: `Bug status updated to ${status}`,
+    });
+  } catch (error) {
+    console.error('Error updating bug status:', error);
+    // Fallback: update local state anyway
+    setBugs(prev => prev.map(bug => 
+      bug.id === bugId 
+        ? { ...bug, status, updated_at: new Date().toISOString() }
+        : bug
+    ));
+    
+    toast({
+      title: "Status Updated",
+      description: `Bug status updated to ${status} (local update)`,
+    });
+  }
+};
+
+const handleDeleteTestCase = async (testCaseId: number) => {
+  setIsDeleting(true);
+  try {
+    await deleteTestCase(testCaseId);
+  } finally {
+    setIsDeleting(false);
+  }
+};
+
+// Filter test cases
+const filteredTestCases = useMemo(() => {
+  let filtered = [...testCases];
+
+  // Search filter
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    filtered = filtered.filter(tc => 
+      tc.title.toLowerCase().includes(query) ||
+      tc.description?.toLowerCase().includes(query) ||
+      tc.expectedResult.toLowerCase().includes(query)
+    );
+  }
+
+  // Status filter
+  if (statusFilter !== "all") {
+    filtered = filtered.filter(tc => tc.status === statusFilter);
+  }
+
+  // Priority filter
+  if (priorityFilter !== "all") {
+    filtered = filtered.filter(tc => tc.priority === priorityFilter);
+  }
+
+  return filtered;
+}, [testCases, searchQuery, statusFilter, priorityFilter]);
+
+const hasActiveFilters = searchQuery.trim() || statusFilter !== "all" || priorityFilter !== "all";
+
+const clearFilters = () => {
+  setSearchQuery("");
+  setStatusFilter("all");
+  setPriorityFilter("all");
 };
   if (isLoading) {
     return (
@@ -134,10 +201,30 @@ const handleAddBug = (bugData: Omit<Bug, 'id' | 'created_at' | 'updated_at'>) =>
             <p className="text-muted-foreground">Execute and track test cases</p>
           </div>
           
-          <CreateTestCaseDialog
-            isCreating={isCreating}
-            onCreate={createTestCase}
-          />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => generateTestCases()}
+              disabled={isCreating}
+              className="gap-2"
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Generate with AI
+                </>
+              )}
+            </Button>
+            <CreateTestCaseDialog
+              isCreating={isCreating}
+              onCreate={createTestCase}
+            />
+          </div>
         </div>
       </div>
 
@@ -179,17 +266,57 @@ const handleAddBug = (bugData: Omit<Bug, 'id' | 'created_at' | 'updated_at'>) =>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">
-                Test Cases ({testCases.length})
+                Test Cases ({filteredTestCases.length}{hasActiveFilters ? ` of ${testCases.length}` : ''})
               </h2>
-              <Button 
-                onClick={handleGenerateTestCases}
-                variant="outline"
-                disabled={isGeneratingAI}
-                className="gradient-ai"
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                {isGeneratingAI ? "Generating..." : "Generate with AI"}
-              </Button>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 p-4 bg-muted/50 rounded-lg border">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search test cases..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[150px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="passed">Passed</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-full sm:w-[150px]">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priority</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={clearFilters}
+                  className="w-full sm:w-auto"
+                  title="Clear filters"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
 
             {testCases.length === 0 ? (
@@ -202,26 +329,31 @@ const handleAddBug = (bugData: Omit<Bug, 'id' | 'created_at' | 'updated_at'>) =>
                     isCreating={isCreating}
                     onCreate={createTestCase}
                   />
-                  <Button 
-                    onClick={handleGenerateTestCases}
-                    variant="outline"
-                    disabled={isGeneratingAI}
-                    className="gradient-ai"
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    {isGeneratingAI ? "Generating..." : "Generate with AI"}
-                  </Button>
                 </div>
+              </div>
+            ) : filteredTestCases.length === 0 ? (
+              <div className="text-center py-12">
+                <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <div className="text-muted-foreground mb-4">
+                  No test cases match your filters.
+                </div>
+                {hasActiveFilters && (
+                  <Button variant="outline" onClick={clearFilters}>
+                    Clear Filters
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
-                {testCases.map((testCase) => (
+                {filteredTestCases.map((testCase) => (
                   <TestCaseCard
                     key={testCase.id}
                     testCase={testCase}
                     onEdit={setEditingTestCase}
-                    onDelete={deleteTestCase}
+                    onDelete={handleDeleteTestCase}
                     onStatusUpdate={updateTestCaseStatus}
+                    onPriorityUpdate={updateTestCasePriority}
+                    isDeleting={isDeleting}
                   />
                 ))}
               </div>
@@ -232,6 +364,7 @@ const handleAddBug = (bugData: Omit<Bug, 'id' | 'created_at' | 'updated_at'>) =>
         <BugsTab 
           bugs={featureBugs}
           onAddBug={handleAddBug}
+          onUpdateBugStatus={handleUpdateBugStatus}
         />
       )}
 

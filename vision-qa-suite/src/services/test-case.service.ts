@@ -82,22 +82,74 @@ export const testCaseService = {
   },
 
   async updateTestCase(testCaseId: number, testCaseData: Partial<TestCase>): Promise<TestCase> {
-    await new Promise(resolve => setTimeout(resolve, 600));
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/test-cases/${testCaseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+        },
+        body: JSON.stringify(testCaseData),
+      });
 
-    const index = mockTestCases.findIndex(tc => tc.id === testCaseId);
-    if (index !== -1) {
-      mockTestCases[index] = { ...mockTestCases[index], ...testCaseData };
-      return mockTestCases[index];
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update test case');
+      }
+
+      const data = await response.json();
+      
+      // Update mock data as fallback
+      const index = mockTestCases.findIndex(tc => tc.id === testCaseId);
+      if (index !== -1) {
+        mockTestCases[index] = { ...mockTestCases[index], ...data.data };
+        return mockTestCases[index];
+      }
+      
+      return data.data;
+    } catch (error: any) {
+      console.error('Error updating test case:', error);
+      // Fallback to mock update
+      const index = mockTestCases.findIndex(tc => tc.id === testCaseId);
+      if (index !== -1) {
+        mockTestCases[index] = { ...mockTestCases[index], ...testCaseData };
+        return mockTestCases[index];
+      }
+      throw error;
     }
-    throw new Error('Test case not found');
   },
 
   async deleteTestCase(testCaseId: number): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/test-cases/${testCaseId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+        },
+      });
 
-    const index = mockTestCases.findIndex(tc => tc.id === testCaseId);
-    if (index !== -1) {
-      mockTestCases.splice(index, 1);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete test case');
+      }
+
+      // Remove from mock data as fallback
+      const index = mockTestCases.findIndex(tc => tc.id === testCaseId);
+      if (index !== -1) {
+        mockTestCases.splice(index, 1);
+      }
+    } catch (error: any) {
+      console.error('Error deleting test case:', error);
+      // Fallback: remove from mock data anyway
+      const index = mockTestCases.findIndex(tc => tc.id === testCaseId);
+      if (index !== -1) {
+        mockTestCases.splice(index, 1);
+      }
+      throw error;
     }
   },
 
@@ -116,5 +168,56 @@ export const testCaseService = {
       return mockTestCases[index];
     }
     throw new Error('Test case not found');
-  }
+  },
+
+  // Generate test cases from feature using AI
+  async generateAITestCases(featureId: string, options?: any): Promise<TestCase[]> {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/test-cases/features/${featureId}/generate-test-cases`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+        },
+        body: JSON.stringify({ options: options || {} }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to generate test cases');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && Array.isArray(result.data)) {
+        // Transform backend test cases to frontend format
+        return result.data.map((tc: any) => ({
+          id: parseInt(tc._id || tc.id) || 0,
+          title: tc.title || '',
+          priority: (tc.priority?.toLowerCase() || 'medium') as "high" | "medium" | "low",
+          status: (tc.status?.toLowerCase() || 'pending') as "passed" | "failed" | "pending",
+          preconditions: tc.preconditions || '',
+          steps: Array.isArray(tc.steps) ? tc.steps : [],
+          expectedResult: tc.expectedResult || '',
+          actualResult: tc.actualResult || '',
+          bugReports: Array.isArray(tc.bugReports) ? tc.bugReports : [],
+          featureId: typeof tc.featureId === 'object' 
+            ? parseInt(tc.featureId._id || tc.featureId) || parseInt(featureId)
+            : parseInt(tc.featureId || featureId),
+          projectId: typeof tc.projectId === 'object'
+            ? parseInt(tc.projectId._id || tc.projectId)
+            : tc.projectId ? parseInt(tc.projectId) : undefined,
+          createdAt: tc.createdAt,
+          updatedAt: tc.updatedAt,
+        }));
+      }
+      
+      return [];
+    } catch (error: any) {
+      console.error('Error generating test cases:', error);
+      throw error;
+    }
+  },
 };

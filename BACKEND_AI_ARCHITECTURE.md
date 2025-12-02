@@ -1,8 +1,34 @@
 # Backend & AI Architecture - Complete Guide
 
-## Overview
+## 📋 Overview
 
-This document explains the complete backend architecture including Express.js API, AI services, RAG system, and how everything integrates.
+This document explains the complete backend architecture including Express.js API, AI services, RAG system, **Chatbot with Orchestration Layer**, and how everything integrates.
+
+**Last Updated**: November 2024  
+**Version**: 2.0 (Includes Chatbot Architecture)
+
+### 🎯 Key Features
+
+- ✅ **Express.js REST API** - Full CRUD operations
+- ✅ **MongoDB** - Primary database for application data
+- ✅ **Supabase pgvector** - Vector database for embeddings
+- ✅ **OpenAI Integration** - Embeddings and RAG
+- ✅ **Chatbot System** - Intelligent conversation with orchestration
+- ✅ **Scoring & Ranking** - Enhanced RAG results
+- ✅ **Caching Layer** - Cost reduction and performance
+- ✅ **Agent Framework** - LLM agents with tools
+- ✅ **Confidence Scoring** - Transparent response quality
+
+### 📚 Quick Navigation
+
+- [Backend Structure](#-backend-structure)
+- [Routes Layer](#routes-layer)
+- [Controllers Layer](#controllers-layer)
+- [Services Layer](#services-layer)
+- [AI Services](#ai-services-layer)
+- [Chatbot Services](#-chatbot-services-layer--new)
+- [Vector Database](#vector-database-integration)
+- [Workflows](#complete-workflow-examples)
 
 ---
 
@@ -16,11 +42,15 @@ This document explains the complete backend architecture including Express.js AP
 ├─────────────────────────────────────┤
 │         Controllers                 │  (Request Handlers)
 ├─────────────────────────────────────┤
+│    Orchestration Layer (NEW)       │  (Chatbot Management)
+├─────────────────────────────────────┤
 │         Services                    │  (Business Logic)
 ├─────────────────────────────────────┤
 │    Models (MongoDB) + Vector DB    │  (Data Layer)
 ├─────────────────────────────────────┤
 │         AI Services                 │  (OpenAI + RAG)
+├─────────────────────────────────────┤
+│    Chatbot Services (NEW)          │  (Scoring, Caching, Agent)
 └─────────────────────────────────────┘
 ```
 
@@ -55,6 +85,7 @@ app.use("/api/features", featuresRouter);
 app.use("/api/test-cases", testCasesRouter);
 app.use("/api/bugs", bugsRouter);
 app.use("/api/ai", aiRouter);
+app.use("/api/chat", chatbotRouter);  // NEW: Chatbot routes
 ```
 
 ---
@@ -112,6 +143,14 @@ POST   /api/bugs/:id/analyze            - Analyze bug with AI
 POST   /api/ai/query                    - Query RAG system
 POST   /api/ai/context                  - Get RAG context
 GET    /api/ai/vector-info/:projectId   - Get vector collection info
+```
+
+#### 6. Chatbot Routes (`backend/routes/chatbot.routes.js`) ⭐ NEW
+```javascript
+POST   /api/chat/message                - Send message to chatbot
+GET    /api/chat/conversation/:id       - Get conversation history
+DELETE /api/chat/conversation/:id       - Delete conversation
+GET    /api/chat/cache/stats            - Get cache statistics
 ```
 
 ---
@@ -184,6 +223,22 @@ GET    /api/ai/vector-info/:projectId   - Get vector collection info
 - `queryAI(req, res)` - Query RAG system with question
 - `getContext(req, res)` - Get RAG context without generating response
 - `getVectorInfo(req, res)` - Get vector collection information
+
+---
+
+#### 6. Chatbot Controller (`backend/controllers/chatbotController.js`) ⭐ NEW
+
+**Functions**:
+- `sendMessage(req, res)` - Process chatbot message with orchestration
+- `getConversation(req, res)` - Get conversation history
+- `deleteConversation(req, res)` - Delete conversation
+- `getCacheStats(req, res)` - Get caching statistics
+
+**Features**:
+- Intent detection
+- Confidence scoring
+- Caching support
+- Conversation memory
 
 ---
 
@@ -527,60 +582,266 @@ const features = await generateFeaturesFromRAG("project_123", { nContextChunks: 
 
 ---
 
-## Vector Database Integration
+## 🤖 Chatbot Services Layer ⭐ NEW
 
-### Vector DB Files
+### Chatbot Service Files
 
-#### 1. Vector DB Wrapper (`backend/vector/vectorDB.js`)
+The chatbot system includes multiple layers for intelligent conversation management:
 
-**Purpose**: Main interface for vector operations
+#### 1. Orchestration Service (`backend/services/chatbot/orchestrationService.js`)
 
-**Functions**:
-- `storeDocumentChunks(projectId, chunks, embeddings, metadatas)`
-- `searchSimilar(projectId, queryText, nResults)`
-- `searchByEmbedding(projectId, queryEmbedding, nResults)`
-- `deleteCollection(projectId)`
-- `getCollectionInfo(projectId)`
+**Purpose**: Central coordinator for chatbot interactions
 
-**Implementation**: Routes all calls to `supabaseVectorDB`
+**Responsibilities**:
+- Intent detection and routing
+- Service selection (RAG, LLM, Agent)
+- Conversation memory management
+- Failover logic
+
+**Key Functions**:
+
+**`processMessage(projectId, message, conversationId)`**
+- Main entry point for chatbot messages
+- Detects intent using `intentService`
+- Routes to appropriate handler
+- Saves to conversation memory
+
+**`handleQuestion(projectId, message, conversationHistory, intent)`**
+- Processes questions about the project
+- Uses RAG orchestrator for context retrieval
+- Uses LLM orchestrator for answer generation
+- Includes failover to general LLM if RAG fails
+
+**`handleCreateFeature(projectId, message, conversationHistory, intent)`**
+- Creates features from user stories
+- Uses Agent Service if available
+- Falls back to RAG + LLM
+
+**`handleCreateTestCases(projectId, message, conversationHistory, intent)`**
+- Creates test cases for features
+- Uses Agent Service or RAG + LLM
+
+**Intent Types**:
+- `QUESTION` - Questions about project
+- `CREATE_FEATURE` - Create new feature
+- `CREATE_TEST_CASES` - Create test cases
+- `UPDATE_FEATURE` - Update feature
+- `LOOKUP_FEATURE` - Find feature
+- `LOOKUP_TEST_CASE` - Find test case
+- `GENERAL_CHAT` - General conversation
 
 ---
 
-#### 2. Supabase Vector DB (`backend/vector/supabaseVectorDB.js`)
+#### 2. Intent Service (`backend/services/chatbot/intentService.js`)
 
-**Purpose**: Supabase pgvector implementation
+**Purpose**: Detect user intent from messages
+
+**Functions**:
+
+**`detectIntent(message)`**
+- Quick keyword-based detection (fast, cheap)
+- LLM-based detection for complex cases
+- Returns intent type, confidence, and extracted data
+
+**Detection Methods**:
+- Keyword matching (fast)
+- LLM classification (accurate)
+
+**Extracted Data**:
+- User stories
+- Feature names/IDs
+- Test case titles
+
+---
+
+#### 3. RAG Orchestrator (`backend/services/chatbot/ragOrchestrator.js`)
+
+**Purpose**: Enhanced RAG search with scoring and ranking
+
+**Functions**:
+
+**`search(projectId, query, options)`**
+- Performs similarity search
+- Applies scoring and ranking
+- Filters by minimum score
+- Caches results
+- Returns context, sources, and confidence
+
+**Options**:
+- `nResults` - Number of results (default: 5)
+- `sourcePriority` - Priority array (e.g., ["Feature", "TestCase", "SRS"])
+- `metadataFilter` - Filter by metadata
+- `minScore` - Minimum score threshold (default: 0.3)
+- `useCache` - Enable caching (default: true)
+
+---
+
+#### 4. LLM Orchestrator (`backend/services/chatbot/llmOrchestrator.js`)
+
+**Purpose**: Manages LLM interactions for chatbot
+
+**Functions**:
+
+**`generateAnswer({ question, context, conversationHistory, sources })`**
+- Generates answers to questions
+- Uses conversation history for context
+- Calculates confidence score
+- Returns answer with confidence
+
+**`generateFeature({ userStory, context, existingFeatures })`**
+- Generates feature from user story
+- Uses lower temperature (0.3) for JSON generation
+- Returns feature object and response
+
+**`generateTestCases({ featureDescription, context, existingTestCases })`**
+- Generates test cases for feature
+- Returns array of test cases
+
+**`generateGeneralResponse({ message, conversationHistory })`**
+- Handles general chat
+- Returns friendly response
+
+---
+
+#### 5. Scoring Service (`backend/services/chatbot/scoringService.js`)
+
+**Purpose**: Score and rank RAG results
+
+**Scoring Factors**:
+- **Semantic Score** (40%) - Vector similarity
+- **Source Priority** (25%) - Feature > TestCase > SRS
+- **Recency Score** (15%) - Newer documents = higher score
+- **Metadata Match** (20%) - Filter matching
+
+**Source Priorities**:
+- Feature: 1.0 (highest)
+- TestCase: 0.8
+- SRS: 0.6
+- Bug: 0.4
+- Other: 0.2
+
+**Functions**:
+- `calculateTotalScore()` - Calculate weighted score
+- `rankDocuments()` - Sort by score
+- `filterByThreshold()` - Filter low scores
+- `calculateConfidence()` - Calculate result confidence
+
+---
+
+#### 6. Caching Service (`backend/services/chatbot/cachingService.js`)
+
+**Purpose**: Reduce costs with intelligent caching
+
+**Cache Types**:
+- **Question Cache** (TTL: 1 hour) - User questions and answers
+- **RAG Cache** (TTL: 30 min) - RAG search results
+- **Feature Cache** (TTL: 2 hours) - Feature data
+- **TestCase Cache** (TTL: 2 hours) - Test case data
+- **Embedding Cache** (TTL: 24 hours) - Expensive embeddings
+
+**Benefits**:
+- 100% cost reduction for repeated queries
+- Faster response times
+- Reduced load on Vector DB
+
+**Functions**:
+- `getCachedAnswer()` / `cacheAnswer()`
+- `getCachedRAG()` / `cacheRAG()`
+- `getCachedFeature()` / `cacheFeature()`
+- `invalidateFeature()` - Clear cache on update
+- `clearProjectCache()` - Clear all project caches
+
+---
+
+#### 7. Conversation Memory (`backend/services/chatbot/conversationMemory.js`)
+
+**Purpose**: Store conversation history for context
+
+**Functions**:
+- `getHistory(conversationId)` - Get conversation history
+- `addMessage(conversationId, message)` - Add message
+- `clearHistory(conversationId)` - Delete conversation
+
+**Storage**:
+- In-memory (NodeCache)
+- TTL: 24 hours
+- Max 20 messages per conversation
+
+---
+
+#### 8. Agent Service (`backend/services/agent/agentService.js`)
+
+**Purpose**: LLM Agent Framework with Tools
+
+**Tools Available**:
+1. **searchVectorDB** - Search project knowledge base
+2. **createFeature** - Create new feature
+3. **createTestCase** - Create test case
+4. **updateFeature** - Update feature
+5. **lookupFeature** - Get feature details
+6. **lookupTestCase** - Get test case details
+
+**Functions**:
+- `initialize()` - Initialize agent with tools
+- `executeTool(toolName, params)` - Execute tool directly
+- `isAvailable()` - Check if agent is ready
+
+**Note**: Currently uses simplified tool execution. Full agent framework can be integrated later.
+
+---
+
+## Vector Database Integration
+
+### Vector Store Files
+
+#### 1. Vector Store (`backend/vector/vectorStore.js`) ⭐ UPDATED
+
+**Purpose**: Main interface for vector operations using Supabase pgvector
 
 **Dependencies**:
 - `@supabase/supabase-js`
+- `@langchain/community` (for SupabaseVectorStore)
 - `generateEmbedding` (for text-to-embedding conversion)
 
 **Key Functions**:
 
-**`storeDocumentChunks(projectId, chunks, embeddings, metadatas)`**
-- Maps chunks to Supabase records
-- Inserts into `project_vectors` table
+**`addDocuments(projectId, documents, embeddings)`**
+- Adds documents with embeddings to Supabase
+- Stores in `project_vectors` table
 - Handles metadata JSONB
 
-**`searchSimilar(projectId, queryEmbedding, nResults)`**
-- Uses RPC function `match_project_vectors`
-- Falls back to direct query if RPC not available
-- Returns formatted results
+**`similaritySearch(projectId, query, k = 5)`**
+- Searches for similar documents using cosine similarity
+- Uses LangChain's SupabaseVectorStore
+- Returns documents with scores
 
-**`searchSimilarByText(projectId, queryText, nResults)`**
-- Generates embedding for query text first
-- Then calls `searchSimilar()`
+**`getRetriever(projectId, k = 5)`**
+- Creates LangChain retriever for RAG
+- Filters by projectId
+- Returns retriever interface
 
-**`searchByEmbedding(projectId, queryEmbedding, nResults)`**
-- Direct search using provided embedding
-- No OpenAI call needed
+**`upsertDocument(projectId, document, embedding, metadataFilter)`**
+- Updates or inserts document
+- Deletes old versions before inserting new one
+- Ensures no duplicates
 
-**`getCollectionInfo(projectId)`**
-- Counts rows in `project_vectors` for project
-- Returns collection statistics
+**`deleteDocumentsByMetadata(projectId, metadataFilter)`**
+- Deletes documents matching metadata filter
+- Used for updating features/test cases
 
-**`deleteCollection(projectId)`**
-- Deletes all rows for project
+**`deleteProject(projectId)`**
+- Deletes all vectors for a project
 - Used when deleting project
+
+**`getProjectInfo(projectId)`**
+- Gets vector count for project
+- Returns project statistics
+
+**Key Features**:
+- ✅ Automatic embedding generation
+- ✅ Metadata filtering
+- ✅ Update/delete operations
+- ✅ LangChain integration
 
 ---
 
@@ -661,6 +922,67 @@ const features = await generateFeaturesFromRAG("project_123", { nContextChunks: 
 
 ---
 
+### Workflow 4: Chatbot Message ⭐ NEW
+
+```
+1. User sends message
+   → POST /api/chat/message
+   → chatbotController.sendMessage()
+
+2. Check cache
+   → cachingService.getCachedAnswer()
+   → If found, return cached response
+
+3. Orchestration Service
+   → orchestrationService.processMessage()
+   → intentService.detectIntent()
+   → conversationMemory.getHistory()
+
+4. RAG Orchestrator (if question)
+   → ragOrchestrator.search()
+   → scoringService.rankDocuments()
+   → cachingService.cacheRAG()
+
+5. LLM Orchestrator
+   → llmOrchestrator.generateAnswer()
+   → Calculates confidence
+
+6. Save to memory
+   → conversationMemory.addMessage()
+   → cachingService.cacheAnswer()
+
+7. Return response
+   → JSON with answer, confidence, sourcesUsed
+```
+
+---
+
+### Workflow 5: Create Feature via Chatbot ⭐ NEW
+
+```
+1. User: "As a user, I want to export test cases"
+   → POST /api/chat/message
+   → Intent: CREATE_FEATURE
+
+2. Orchestration Service
+   → handleCreateFeature()
+   → Extracts user story
+
+3. Agent Service (if available)
+   → agentService.executeTool("createFeature")
+   → Creates feature in MongoDB + Vector DB
+
+4. Or RAG + LLM
+   → ragOrchestrator.search() (finds similar features)
+   → llmOrchestrator.generateFeature()
+   → featureService.createFeature()
+
+5. Return response
+   → Feature created with confidence score
+```
+
+---
+
 ## Environment Variables
 
 ### Required Variables
@@ -697,18 +1019,30 @@ backend/
 │   ├── features.routes.js
 │   ├── testCases.routes.js
 │   ├── bugs.routes.js
-│   └── ai.routes.js
+│   ├── ai.routes.js
+│   └── chatbot.routes.js       # ⭐ NEW: Chatbot routes
 ├── controllers/                 # Request handlers
 │   ├── projectsController.js
 │   ├── featuresController.js
 │   ├── testCasesController.js
 │   ├── bugsController.js
-│   └── aiController.js
+│   ├── aiController.js
+│   └── chatbotController.js    # ⭐ NEW: Chatbot controller
 ├── services/                    # Business logic
 │   ├── projectService.js
 │   ├── featureService.js
 │   ├── testCaseService.js
-│   └── bugService.js
+│   ├── bugService.js
+│   ├── chatbot/                 # ⭐ NEW: Chatbot services
+│   │   ├── orchestrationService.js
+│   │   ├── intentService.js
+│   │   ├── ragOrchestrator.js
+│   │   ├── llmOrchestrator.js
+│   │   ├── scoringService.js
+│   │   ├── cachingService.js
+│   │   └── conversationMemory.js
+│   └── agent/                   # ⭐ NEW: Agent framework
+│       └── agentService.js
 ├── models/                      # MongoDB models
 │   ├── User.js
 │   ├── Project.js
@@ -719,9 +1053,11 @@ backend/
 │   ├── embeddings.js           # OpenAI embeddings
 │   ├── textChunker.js          # Text chunking
 │   └── ragService.js           # RAG system
-└── vector/                      # Vector database
-    ├── vectorDB.js             # Main interface
-    └── supabaseVectorDB.js    # Supabase implementation
+├── vector/                      # Vector database
+│   └── vectorStore.js          # ⭐ UPDATED: Supabase pgvector
+└── middleware/                  # Middleware
+    ├── auth.middleware.js      # ⭐ UPDATED: Authentication
+    └── validation.middleware.js
 ```
 
 ---
@@ -738,13 +1074,25 @@ backend/
 - Easy to test and mock
 
 ### 3. Singleton Pattern
-- `vectorDB` is a singleton instance
-- `supabaseVectorDB` is a singleton instance
+- `vectorStore` is a singleton instance
+- `cachingService` is a singleton instance
+- `agentService` is a singleton instance
 
 ### 4. RAG Pattern
 - Retrieve: Search vector DB for relevant context
 - Augment: Add context to prompt
 - Generate: Use AI to generate response
+
+### 5. Orchestration Pattern ⭐ NEW
+- Central coordinator manages interactions
+- Routes requests to appropriate services
+- Handles failover and error recovery
+- Manages conversation state
+
+### 6. Scoring & Ranking Pattern ⭐ NEW
+- Multiple scoring factors (semantic, source, recency, metadata)
+- Weighted combination for final score
+- Confidence calculation for transparency
 
 ---
 
@@ -815,12 +1163,17 @@ All services and controllers use try-catch blocks:
 ## Future Enhancements
 
 ### Potential Improvements
-- Add caching layer (Redis)
-- Implement background jobs for long-running AI tasks
-- Add WebSocket support for real-time updates
-- Implement rate limiting
-- Add request logging and monitoring
-- Implement API versioning
+- ✅ Caching layer (In-memory LRU) - **IMPLEMENTED**
+- ✅ Orchestration layer - **IMPLEMENTED**
+- ✅ Scoring & Ranking - **IMPLEMENTED**
+- ✅ Agent Framework - **IMPLEMENTED**
+- ✅ Conversation Memory - **IMPLEMENTED**
+- ⏳ Redis caching (for distributed systems)
+- ⏳ Background jobs for long-running AI tasks
+- ⏳ WebSocket support for real-time updates
+- ⏳ Rate limiting
+- ⏳ Request logging and monitoring
+- ⏳ API versioning
 
 ---
 
@@ -883,6 +1236,19 @@ All services and controllers use try-catch blocks:
 - `backend/ai/ragService.js`
 
 ### Vector DB
-- `backend/vector/vectorDB.js`
-- `backend/vector/supabaseVectorDB.js`
+- `backend/vector/vectorStore.js` ⭐ UPDATED
+
+### Chatbot Services ⭐ NEW
+- `backend/services/chatbot/orchestrationService.js`
+- `backend/services/chatbot/intentService.js`
+- `backend/services/chatbot/ragOrchestrator.js`
+- `backend/services/chatbot/llmOrchestrator.js`
+- `backend/services/chatbot/scoringService.js`
+- `backend/services/chatbot/cachingService.js`
+- `backend/services/chatbot/conversationMemory.js`
+- `backend/services/agent/agentService.js`
+
+### Chatbot Controller & Routes ⭐ NEW
+- `backend/controllers/chatbotController.js`
+- `backend/routes/chatbot.routes.js`
 

@@ -5,12 +5,44 @@ import { useProjects } from "../hooks/useProjects";
 import ProjectCard from "./dashboard/ProjectCard";
 import CreateProjectDialog from "./dashboard/CreateProjectDialog";
 import EmptyState from "./dashboard/EmptyState";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
-  const { projects, isLoading, isCreating, createProject } = useProjects();
+  const { projects, isLoading, isCreating, createProject, deleteProject } = useProjects();
+  const { toast } = useToast();
 
   const handleCreateProject = async (projectData: { name: string; description: string }) => {
-    await createProject(projectData);
+    try {
+      const createdProject = await createProject(projectData);
+      toast({
+        title: "Project Created",
+        description: "Project has been created successfully",
+      });
+      return createdProject ? { id: createdProject.id } : undefined;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create project",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string | number) => {
+    try {
+      await deleteProject(projectId.toString());
+      toast({
+        title: "Project Deleted",
+        description: "Project has been deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete project",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -51,7 +83,11 @@ const Dashboard = () => {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard 
+                key={project.id} 
+                project={project} 
+                onDelete={handleDeleteProject}
+              />
             ))}
           </div>
         )}

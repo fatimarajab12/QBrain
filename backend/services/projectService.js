@@ -101,6 +101,11 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   const project = await Project.findById(id);
   if (!project) throw new Error("Project not found");
   
+  // Check if SRS document already exists
+  if (project.srsDocument && project.srsDocument.fileName && project.srsDocument.processed) {
+    throw new Error("SRS document already uploaded for this project. Each project can only have one SRS document.");
+  }
+  
   const projectIdString = project._id.toString();
 
   let text = "";
@@ -147,13 +152,15 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
 
   console.log("Extracted text:\n", text);
 
+  // Use larger chunks to reduce embedding costs (fewer API calls)
+  // Cost optimization: chunkSize 2000 instead of 1000 = ~50% fewer chunks = ~50% lower cost
   const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 1000,
-    chunkOverlap: 200,
+    chunkSize: 2000, // Increased from 1000 to reduce number of chunks by ~50%
+    chunkOverlap: 300, // Increased proportionally to maintain context
   });
 
   const chunks = await splitter.splitText(text);
-  console.log(`Split SRS into ${chunks.length} chunks`);
+  console.log(`Split SRS into ${chunks.length} chunks (optimized for cost)`);
   const nContextChunks = calculateDynamicContextChunks(chunks.length);
   console.log("Using dynamic nContextChunks:", nContextChunks);
 
@@ -161,10 +168,12 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
     console.log(`\n--- Chunk ${idx} ---\n${chunk}\n-----------------\n`);
   });
 
+  // Generate embeddings using the cheapest model: text-embedding-3-small
+  // Cost: $0.02 per 1M tokens (vs $0.13 for text-embedding-3-large)
   let embeddings;
   try {
-    embeddings = await generateEmbeddingsBatch(chunks);
-    console.log(`Generated embeddings for all chunks`);
+    embeddings = await generateEmbeddingsBatch(chunks); // Uses text-embedding-3-small by default
+    console.log(`Generated embeddings for all chunks using cost-optimized model`);
     chunks.forEach((chunk, idx) => {
       if (idx % 5 === 0) {
         console.log(
@@ -211,62 +220,15 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   await project.save();
   console.log("Project SRS data updated");
 
-  let featuresGenerated = 0;
-  let testCasesGenerated = 0;
-
-  try {
-    console.log("Starting automatic feature generation from SRS...");
-    const generatedFeatures = await featureService.generateFeaturesFromSRS(
-      project._id,
-      {
-        nContextChunks,
-        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      }
-    );
-    featuresGenerated = generatedFeatures.length;
-    console.log(`Generated ${featuresGenerated} features from SRS`);
-
-    console.log("Starting automatic test case generation for features...");
-    for (const feature of generatedFeatures) {
-      try {
-        const generatedTestCases =
-          await testCaseService.generateTestCasesForFeature(feature._id, {
-            nContextChunks: 5,
-            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-          });
-        testCasesGenerated += generatedTestCases.length;
-        console.log(
-          `Generated ${generatedTestCases.length} test cases for feature: ${feature.name}`
-        );
-      } catch (error) {
-        console.error(
-          `Error generating test cases for feature ${feature.name}:`,
-          error.message
-        );
-      }
-    }
-    console.log(`Total test cases generated: ${testCasesGenerated}`);
-  } catch (error) {
-    console.error(
-      "Error during automatic feature/test case generation:",
-      error.message
-    );
-    // Don't fail the SRS upload if generation fails - return partial success
-    return {
-      success: true,
-      chunksCount: chunks.length,
-      message: "SRS processed successfully, but feature generation failed",
-      warning: error.message,
-      featuresGenerated: 0,
-      testCasesGenerated: 0,
-    };
-  }
+  // Skip automatic feature and test case generation to reduce costs
+  // Users can generate them manually from the UI when needed
+  console.log("SRS processed successfully. Features and test cases can be generated manually from the UI.");
 
   return {
     success: true,
     chunksCount: chunks.length,
-    message: "SRS processed successfully",
-    featuresGenerated,
-    testCasesGenerated,
+    message: "SRS processed successfully. You can now generate features and test cases manually from the project page.",
+    featuresGenerated: 0,
+    testCasesGenerated: 0,
   };
 }

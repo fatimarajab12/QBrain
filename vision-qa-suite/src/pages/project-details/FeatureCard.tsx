@@ -5,23 +5,89 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Feature } from "@/types/feature";
 import StatusDropdown from "./StatusDropdown";
+import EditFeatureDialog from "./EditFeatureDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 interface FeatureCardProps {
   feature: Feature;
   projectId: string;
   onStatusChange: (featureId: number, newStatus: Feature["status"]) => void;
+  onUpdate?: (featureId: number, featureData: { name: string; description: string }) => Promise<void>;
+  onDelete?: (featureId: number) => Promise<void>;
+  isUpdating?: boolean;
+  isDeleting?: boolean;
 }
 
-const FeatureCard = ({ feature, projectId, onStatusChange }: FeatureCardProps) => {
+const FeatureCard = ({ 
+  feature, 
+  projectId, 
+  onStatusChange, 
+  onUpdate, 
+  onDelete, 
+  isUpdating = false,
+  isDeleting = false 
+}: FeatureCardProps) => {
   return (
     <Card key={feature.id} className="shadow-soft border-border hover:shadow-lg transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between mb-2">
           <CardTitle className="text-lg line-clamp-1">{feature.name}</CardTitle>
-          <StatusDropdown 
-            feature={feature} 
-            onStatusChange={onStatusChange}
-          />
+          <div className="flex items-center gap-2">
+            {onUpdate && (
+              <EditFeatureDialog
+                feature={feature}
+                isUpdating={isUpdating}
+                onUpdate={onUpdate}
+              />
+            )}
+            {onDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Feature</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{feature.name}"? This action cannot be undone and will permanently delete all associated test cases and bugs.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => onDelete(feature.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Deleting..." : "Delete"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <StatusDropdown 
+              feature={feature} 
+              onStatusChange={onStatusChange}
+            />
+          </div>
         </div>
         <CardDescription className="line-clamp-2">{feature.description}</CardDescription>
       </CardHeader>

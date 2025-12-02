@@ -125,7 +125,8 @@ export const deleteFeature = async (req, res) => {
 export const generateFeatures = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const options = req.body.options || {};
+    // Safely extract options from request body
+    const options = (req.body && req.body.options) ? req.body.options : {};
 
     const features = await featureService.generateFeaturesFromSRS(projectId, options);
 

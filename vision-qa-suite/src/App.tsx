@@ -8,9 +8,6 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProjectDetails from "./pages/ProjectDetails";
 import FeatureDetails from "./pages/FeatureDetails";
-import TestGenerator from "./pages/TestGenerator";
-import BugAnalyzer from "./pages/BugAnalyzer";
-import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import AppLayout from "./layouts/AppLayout";
@@ -32,9 +29,6 @@ const App = () => (
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/projects/:projectId/features/:featureId" element={<FeatureDetails />} />
-        <Route path="/test-generator" element={<TestGenerator />} />
-        <Route path="/bug-analyzer" element={<BugAnalyzer />} />
-        <Route path="/reports" element={<Reports />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
           <Route path="*" element={<NotFound />} />

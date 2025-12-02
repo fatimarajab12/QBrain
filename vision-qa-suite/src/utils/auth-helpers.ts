@@ -22,6 +22,7 @@ export const authStorage = {
   clear(): void {
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
+    localStorage.removeItem("userId");
   },
 
   isAuthenticated(): boolean {

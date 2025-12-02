@@ -56,7 +56,7 @@ const CreateTestCaseDialog = ({ isCreating, onCreate }: CreateTestCaseDialogProp
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button className="gradient-primary">
+        <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25">
           <Plus className="mr-2 h-4 w-4" />
           Add Test Case
         </Button>
@@ -189,7 +189,7 @@ const CreateTestCaseDialog = ({ isCreating, onCreate }: CreateTestCaseDialogProp
           <div className="flex gap-2 pt-4">
             <Button
               onClick={handleCreate}
-              className="flex-1 gradient-primary"
+              className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25"
               disabled={isCreating || !newTestCase.title.trim()}
             >
               {isCreating ? (

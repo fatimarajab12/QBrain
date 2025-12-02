@@ -8,10 +8,13 @@ import { useFeatures } from "../hooks/useFeatures";
 import FeatureCard from "./project-details/FeatureCard";
 import CreateFeatureDialog from "./project-details/CreateFeatureDialog";
 import EmptyState from "./project-details/EmptyState";
-import AIGenerationDialog from "./project-details/AIGenerationDialog";
 import BugsTab from "./project-details/BugTab";
 import { Bug } from "@/types/bug";
 import GooeyTabs from "@/components/ui/gooey-tabs";
+import { bugService } from "@/services/bug.service";
+import { useToast } from "@/hooks/use-toast";
+import { projectService } from "@/services/project.service";
+import { Project } from "@/types/project";
 
 // Mock bugs data - to be replaced with API calls
 const mockBugs: Bug[] = [
@@ -52,19 +55,38 @@ const mockBugs: Bug[] = [
 
 const ProjectDetails = () => {
   const { projectId } = useParams();
+  const { toast } = useToast();
   const {
     features,
     isLoading,
     isCreating,
     createFeature,
     updateFeatureStatus,
-    generateFeaturesFromAI,
-    isGeneratingAI,
-    hasAIGeneratedFeatures
+    updateFeature,
+    deleteFeature,
   } = useFeatures(projectId);
+  
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const [activeTab, setActiveTab] = useState<"features" | "bugs">("features");
   const [bugs, setBugs] = useState<Bug[]>(mockBugs);
+  const [project, setProject] = useState<Project | null>(null);
+
+  // Fetch project details
+  useEffect(() => {
+    const fetchProject = async () => {
+      if (projectId) {
+        try {
+          const projectData = await projectService.fetchProjectById(projectId);
+          setProject(projectData);
+        } catch (error) {
+          console.error("Error fetching project:", error);
+        }
+      }
+    };
+    fetchProject();
+  }, [projectId]);
 
   // TODO: Fetch bugs from API
   useEffect(() => {
@@ -73,15 +95,27 @@ const ProjectDetails = () => {
   }, [projectId]);
 
   const handleCreateFeature = async (featureData: { name: string; description: string }) => {
-  if (!projectId) return;
-  await createFeature(featureData);
-};
+    if (!projectId) return;
+    await createFeature(featureData);
+  };
 
+  const handleUpdateFeature = async (featureId: number, featureData: { name: string; description: string }) => {
+    setIsUpdating(true);
+    try {
+      await updateFeature(featureId, featureData);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
-  const handleAIGenerate = async (file: File, extractedText?: string) => {
-  if (!projectId) return;
-  await generateFeaturesFromAI(file, extractedText);
-};
+  const handleDeleteFeature = async (featureId: number) => {
+    setIsDeleting(true);
+    try {
+      await deleteFeature(featureId);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   const handleAddBug = (bugData: Omit<Bug, 'id' | 'created_at' | 'updated_at'>) => {
     // TODO: Replace with API call
     const newBug: Bug = {
@@ -91,6 +125,38 @@ const ProjectDetails = () => {
       updated_at: new Date().toISOString()
     };
     setBugs(prev => [...prev, newBug]);
+  };
+
+  const handleUpdateBugStatus = async (bugId: number, status: Bug['status']) => {
+    try {
+      // Update via API
+      await bugService.updateBugStatus(bugId, status);
+      
+      // Update local state
+      setBugs(prev => prev.map(bug => 
+        bug.id === bugId 
+          ? { ...bug, status, updated_at: new Date().toISOString() }
+          : bug
+      ));
+
+      toast({
+        title: "Success",
+        description: `Bug status updated to ${status}`,
+      });
+    } catch (error) {
+      console.error('Error updating bug status:', error);
+      // Fallback: update local state anyway
+      setBugs(prev => prev.map(bug => 
+        bug.id === bugId 
+          ? { ...bug, status, updated_at: new Date().toISOString() }
+          : bug
+      ));
+      
+      toast({
+        title: "Status Updated",
+        description: `Bug status updated to ${status} (local update)`,
+      });
+    }
   };
 
   if (isLoading) {
@@ -108,7 +174,7 @@ const ProjectDetails = () => {
               <h1 className="text-3xl font-bold mb-2">Project Features</h1>
               <p className="text-muted-foreground">Manage features and generate test cases</p>
             </div>
-            <Button disabled className="gradient-primary opacity-50">
+            <Button disabled className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/25 opacity-50">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Loading...
             </Button>
@@ -131,23 +197,9 @@ const ProjectDetails = () => {
             Back to Projects
           </Button>
         </Link>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Project Features</h1>
-            <p className="text-muted-foreground">Manage features and generate test cases</p>
-          </div>
-          <div className="flex gap-2">
-            {!hasAIGeneratedFeatures && (
-              <AIGenerationDialog 
-                onGenerate={handleAIGenerate}
-                isGenerating={isGeneratingAI}
-              />
-            )}
-            <CreateFeatureDialog 
-              isCreating={isCreating}
-              onCreate={handleCreateFeature}
-            />
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Project Features</h1>
+          <p className="text-muted-foreground">Manage features and generate test cases</p>
         </div>
       </div>
 
@@ -181,28 +233,40 @@ const ProjectDetails = () => {
 
       {/* Tab Content */}
       {activeTab === "features" ? (
-        features.length === 0 ? (
-          <EmptyState 
-            onCreateFeature={() => document.querySelector<HTMLButtonElement>('[data-testid="create-feature-trigger"]')?.click()}
-            onGenerateWithAI={() => document.querySelector<HTMLButtonElement>('[data-testid="ai-generate-trigger"]')?.click()}
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => (
-              <FeatureCard
-                key={feature.id}
-                feature={feature}
-                projectId={projectId!}
-                onStatusChange={updateFeatureStatus}
-              />
-            ))}
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <CreateFeatureDialog 
+              isCreating={isCreating}
+              onCreate={handleCreateFeature}
+            />
           </div>
-        )
+          {features.length === 0 ? (
+            <EmptyState 
+              onCreateFeature={() => document.querySelector<HTMLButtonElement>('[data-testid="create-feature-trigger"]')?.click()}
+            />
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {features.map((feature) => (
+                <FeatureCard
+                  key={feature.id}
+                  feature={feature}
+                  projectId={projectId!}
+                  onStatusChange={updateFeatureStatus}
+                  onUpdate={handleUpdateFeature}
+                  onDelete={handleDeleteFeature}
+                  isUpdating={isUpdating}
+                  isDeleting={isDeleting}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       ) : (
         <BugsTab 
           bugs={bugs} 
           features={features}
           onAddBug={handleAddBug}
+          onUpdateBugStatus={handleUpdateBugStatus}
         />
       )}
     </div>

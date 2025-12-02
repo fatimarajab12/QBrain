@@ -46,6 +46,19 @@ export const useProjects = () => {
     }
   };
 
+  const deleteProject = async (projectId: string | number) => {
+    try {
+      await projectService.deleteProject(projectId.toString());
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete project';
+      setError(errorMessage);
+      console.error('Error deleting project:', err);
+      throw err;
+    }
+  };
+
   return {
     projects,
     isLoading,
@@ -53,5 +66,6 @@ export const useProjects = () => {
     error,
     fetchProjects,
     createProject,
+    deleteProject,
   };
 };

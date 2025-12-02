@@ -8,8 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Sparkles, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import PixelBlast from "@/components/custom/DotGrid";
+import Logo from "@/components/Logo";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -56,11 +57,8 @@ const AuthLayout = ({ children, title, description }: AuthLayoutProps) => {
           </Link>
 
           {/* Logo */}
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center shadow-medium">
-              <Sparkles className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold">QA Assistant</span>
+          <div className="flex items-center justify-center mb-8">
+            <Logo size={48} showText={true} textSize="lg" />
           </div>
 
           <Card className="shadow-strong border-border backdrop-blur-sm bg-background/80">

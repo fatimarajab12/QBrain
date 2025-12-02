@@ -182,7 +182,7 @@ const EditTestCaseDialog = ({ testCase, isUpdating, onUpdate, onClose }: EditTes
           <div className="flex gap-2 pt-4">
             <Button
               onClick={handleUpdate}
-              className="flex-1 gradient-primary"
+              className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25"
               disabled={isUpdating || !editingTestCase.title.trim()}
             >
               {isUpdating ? (

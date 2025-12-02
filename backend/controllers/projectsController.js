@@ -195,9 +195,13 @@ export const uploadSRS = async (req, res) => {
     });
   } catch (error) {
     console.error("Upload SRS error:", error);
-    res.status(500).json({
+    
+    // Check if error is about existing SRS document
+    const statusCode = error.message.includes("already uploaded") ? 409 : 500;
+    
+    res.status(statusCode).json({
       success: false,
-      message: "Error processing SRS document",
+      message: error.message || "Error processing SRS document",
       error: error.message,
     });
   }

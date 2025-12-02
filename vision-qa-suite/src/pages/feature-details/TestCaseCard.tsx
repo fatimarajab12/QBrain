@@ -1,11 +1,22 @@
 // pages/feature-details/components/TestCaseCard.tsx
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Play, FileText, AlertCircle, CheckCircle2, Edit, Trash2 } from "lucide-react";
+import { Play, AlertCircle, CheckCircle2, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestCase } from "@/types/test-case";
 import { getPriorityColor, getStatusColor } from "@/utils/test-case-helpers";
 
@@ -14,9 +25,11 @@ interface TestCaseCardProps {
   onEdit: (testCase: TestCase) => void;
   onDelete: (testCaseId: number) => void;
   onStatusUpdate: (testCaseId: number, status: "passed" | "failed") => void;
+  onPriorityUpdate?: (testCaseId: number, priority: "high" | "medium" | "low") => void;
+  isDeleting?: boolean;
 }
 
-const TestCaseCard = ({ testCase, onEdit, onDelete, onStatusUpdate }: TestCaseCardProps) => {
+const TestCaseCard = ({ testCase, onEdit, onDelete, onStatusUpdate, onPriorityUpdate, isDeleting = false }: TestCaseCardProps) => {
   const [activeTab, setActiveTab] = useState("details");
 
   const getStatusIcon = (status: string) => {
@@ -43,19 +56,58 @@ const TestCaseCard = ({ testCase, onEdit, onDelete, onStatusUpdate }: TestCaseCa
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDelete(testCase.id)}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Test Case</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{testCase.title}"? This action cannot be undone and will permanently delete all associated data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => onDelete(testCase.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <Badge className={getPriorityColor(testCase.priority)}>
-                {testCase.priority}
-              </Badge>
+            <div className="flex gap-2 flex-wrap items-center">
+              {onPriorityUpdate ? (
+                <Select
+                  value={testCase.priority}
+                  onValueChange={(value: "high" | "medium" | "low") => onPriorityUpdate(testCase.id, value)}
+                >
+                  <SelectTrigger className={`h-6 w-auto px-2 ${getPriorityColor(testCase.priority)} border-0`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge className={getPriorityColor(testCase.priority)}>
+                  {testCase.priority}
+                </Badge>
+              )}
               <Badge className={getStatusColor(testCase.status)}>
                 <span className="mr-1">{getStatusIcon(testCase.status)}</span>
                 {testCase.status}
@@ -119,11 +171,6 @@ const TestCaseCard = ({ testCase, onEdit, onDelete, onStatusUpdate }: TestCaseCa
                 <AlertCircle className="mr-2 h-4 w-4" />
                 Mark Failed
               </Button>
-              {testCase.status === "failed" && (
-                <Link to={`/bug-analyzer?testCaseId=${testCase.id}`}>
-                
-                </Link>
-              )}
             </div>
           </TabsContent>
         </Tabs>

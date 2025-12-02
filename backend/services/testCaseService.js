@@ -3,6 +3,8 @@ import { TestCase } from "../models/TestCase.js";
 import { Feature } from "../models/Feature.js";
 import { Project } from "../models/Project.js";
 import { generateTestCasesFromRAG } from "../ai/ragService.js";
+import { vectorStore } from "../vector/vectorStore.js";
+import { Document } from "@langchain/core/documents";
 
 
 function validateObjectId(id, fieldName = "ID") {
@@ -49,10 +51,47 @@ export async function createTestCase(testCaseData) {
 
     const testCase = new TestCase({
       ...testCaseData,
-      isAIGenerated: false, // Explicitly mark as manual creation
+      // Keep isAIGenerated from testCaseData if provided, otherwise default to false
+      isAIGenerated: testCaseData.isAIGenerated !== undefined ? testCaseData.isAIGenerated : false,
     });
 
     await testCase.save();
+
+    // Add all test cases (both manual and AI-generated) to vector database for chatbot support
+    try {
+      const projectId = testCase.projectId.toString();
+      const featureId = testCase.featureId.toString();
+      
+      // Create test case content for vector database
+      const testCaseContent = `Test Case: ${testCase.title}\n\nDescription: ${testCase.description}\n\nSteps:\n${(testCase.steps || []).map((step, idx) => `${idx + 1}. ${step}`).join("\n")}\n\nExpected Result: ${testCase.expectedResult}\n\nPriority: ${testCase.priority}\n\nStatus: ${testCase.status}\n\nPreconditions: ${(testCase.preconditions || []).join(", ")}`;
+      
+      const testCaseDocument = new Document({
+        pageContent: testCaseContent,
+        metadata: {
+          projectId: projectId,
+          source: "TestCase",
+          testCaseId: testCase._id.toString(),
+          featureId: featureId,
+          type: "testcase",
+          isAIGenerated: testCase.isAIGenerated || false,
+          createdAt: new Date().toISOString(),
+        },
+      });
+
+      // Add to vector database
+      await vectorStore.upsertDocument(
+        projectId,
+        testCaseDocument,
+        null, // embedding will be generated automatically
+        { testCaseId: testCase._id.toString(), type: "testcase" }
+      );
+
+      console.log(`Added test case ${testCase._id} to vector database`);
+    } catch (vectorError) {
+      // Log error but don't fail the creation
+      console.error("Error adding test case to vector database:", vectorError);
+    }
+
     return testCase;
   } catch (error) {
     console.error("Error creating test case:", error);
@@ -160,6 +199,12 @@ export async function updateTestCase(testCaseId, updateData) {
   try {
     const id = validateObjectId(testCaseId, "Test Case ID");
 
+    // Get the test case before update to check if it was AI-generated
+    const existingTestCase = await TestCase.findById(id);
+    if (!existingTestCase) {
+      throw new Error("Test case not found");
+    }
+
     if (updateData.featureId) {
       updateData.featureId = validateObjectId(updateData.featureId, "Feature ID");
       
@@ -193,6 +238,53 @@ export async function updateTestCase(testCaseId, updateData) {
     .populate("featureId", "_id name description")
     .populate("projectId", "_id name");
 
+    // Check if test case was found and updated
+    if (!testCase) {
+      throw new Error("Test case not found");
+    }
+
+    // Update all test cases (both manual and AI-generated) in vector database for chatbot support
+    try {
+      // Handle projectId and featureId whether they're ObjectIds or populated objects
+      const projectId = typeof testCase.projectId === 'object' && testCase.projectId._id 
+        ? testCase.projectId._id.toString() 
+        : testCase.projectId.toString();
+      
+      const featureId = typeof testCase.featureId === 'object' && testCase.featureId._id 
+        ? testCase.featureId._id.toString() 
+        : testCase.featureId.toString();
+      
+      // Create test case content for vector database
+      const testCaseContent = `Test Case: ${testCase.title}\n\nDescription: ${testCase.description}\n\nSteps:\n${(testCase.steps || []).map((step, idx) => `${idx + 1}. ${step}`).join("\n")}\n\nExpected Result: ${testCase.expectedResult}\n\nPriority: ${testCase.priority}\n\nStatus: ${testCase.status}\n\nPreconditions: ${(testCase.preconditions || []).join(", ")}`;
+      
+      const testCaseDocument = new Document({
+        pageContent: testCaseContent,
+        metadata: {
+          projectId: projectId,
+          source: "TestCase",
+          testCaseId: testCase._id.toString(),
+          featureId: featureId,
+          type: "testcase",
+          isAIGenerated: testCase.isAIGenerated || false,
+          updatedAt: new Date().toISOString(),
+          
+        },
+      });
+
+      // Update or insert in vector database
+      await vectorStore.upsertDocument(
+        projectId,
+        testCaseDocument,
+        null, // embedding will be generated automatically
+        { testCaseId: testCase._id.toString(), type: "testcase" }
+      );
+
+      console.log(`Updated test case ${testCase._id} in vector database`);
+    } catch (vectorError) {
+      // Log error but don't fail the update
+      console.error("Error updating test case in vector database:", vectorError);
+    }
+
     return testCase;
   } catch (error) {
     console.error("Error updating test case:", error);
@@ -204,9 +296,28 @@ export async function deleteTestCase(testCaseId) {
   try {
     const id = validateObjectId(testCaseId, "Test Case ID");
 
-    const testCase = await TestCase.findByIdAndDelete(id);
+    // Get test case before deletion to check if it was AI-generated
+    const testCase = await TestCase.findById(id);
     if (!testCase) {
       return { success: false, message: "Test case not found" };
+    }
+
+    await TestCase.findByIdAndDelete(id);
+
+    // Delete all test cases (both manual and AI-generated) from vector database for chatbot support
+    try {
+      const projectId = testCase.projectId.toString();
+      
+      // Delete from vector database
+      await vectorStore.deleteDocumentsByMetadata(projectId, {
+        testCaseId: testCase._id.toString(),
+        type: "testcase"
+      });
+
+      console.log(`Deleted test case ${testCase._id} from vector database`);
+    } catch (vectorError) {
+      // Log error but don't fail the deletion
+      console.error("Error deleting test case from vector database:", vectorError);
     }
 
     return { success: true };

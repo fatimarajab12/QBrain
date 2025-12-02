@@ -1,0 +1,37 @@
+@startuml
+title Activity Diagram: Generate Features from SRS (AI)
+
+|User|
+start
+:Navigate to project features page;
+:Click "Generate Features with AI" button;
+
+|System|
+:Check if SRS document exists;
+if (SRS document exists?) then (no)
+  |User|
+  :Show error: "Please upload SRS document first";
+  stop
+else (yes)
+  |System|
+  :Retrieve relevant context chunks\nfrom project_vectors;
+  :Generate features using LLM\n(based on SRS context);
+  :Parse AI response (JSON);
+  if (Valid features generated?) then (no)
+    |User|
+    :Show error: "Failed to generate features";
+    stop
+  else (yes)
+    |System|
+    :Save features to MongoDB;
+    :Store feature embeddings in Supabase;
+    |User|
+    :Display generated features;
+    :Option to edit/delete features;
+    :Option to generate test cases;
+    stop
+  endif
+endif
+
+@enduml
+

@@ -282,7 +282,8 @@ export const deleteTestCase = async (req, res) => {
 export const generateTestCases = async (req, res) => {
   try {
     const { featureId } = req.params;
-    const options = req.body.options || {};
+    // Safely extract options from request body
+    const options = (req.body && req.body.options) ? req.body.options : {};
 
     const testCases = await testCaseService.generateTestCasesForFeature(featureId, options);
 
