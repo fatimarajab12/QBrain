@@ -20,14 +20,14 @@ const StatusDropdown = ({ feature, onStatusChange }: StatusDropdownProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 gap-1 px-2 hover:bg-blue-50 hover:border-blue-100 transition-colors">
+        <Button variant="outline" size="sm" className="h-6 gap-0.5 px-1 text-xs hover:bg-blue-50 hover:border-blue-100 transition-colors">
           <Badge 
             variant="secondary" 
-            className={`${getStatusColor(feature.status)} pointer-events-none border font-medium`}
+            className={`${getStatusColor(feature.status)} pointer-events-none border text-[10px] font-medium py-0 px-1 leading-tight`}
           >
             {getStatusLabel(feature.status)}
           </Badge>
-          <ChevronDown className="h-3 w-3 opacity-50" />
+          <ChevronDown className="h-2 w-2 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">

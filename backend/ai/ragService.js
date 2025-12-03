@@ -99,8 +99,12 @@ Please provide a helpful answer based on the context above.`;
   }
 }
 
+
+
 export async function getRAGContext(projectId, query, nResults = 5) {
   try {
+    // Get the similar chunks from the vector store
+    // nResults is the number of similar chunks to return
     const similarChunks = await vectorStore.similaritySearch(
       projectId,
       query,
@@ -123,7 +127,16 @@ export async function generateFeaturesFromRAG(projectId, options = {}) {
     // Ensure options is an object
     const safeOptions = options && typeof options === 'object' ? options : {};
     const { nContextChunks = 10, model = "gpt-4o-mini" } = safeOptions;
-
+/**
+ Input: "requirements features specifications"
+This is the search query used to retrieve relevant context from the SRS.
+Why this text?
+Because when generating features, the most relevant SRS content is usually related to:
+requirements
+features
+specifications
+“Find me the chunks in the SRS that best match these keywords.”
+ */
     const contextChunks = await getRAGContext(
       projectId,
       "requirements features specifications",

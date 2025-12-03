@@ -2,6 +2,119 @@
 import { Feature } from '@/types/feature';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
+
+// Mock data - temporary until backend is ready
+const mockFeatures: Feature[] = [
+  {
+    id: "1",
+    name: "User Authentication",
+    description: "Handles user login, registration, and password management. Includes secure session management and password reset functionality.",
+    testCasesCount: 8,
+    bugsCount: 2,
+    status: "in-progress",
+    progress: 65,
+    projectId: "1",
+    priority: "High",
+    isAIGenerated: true,
+    acceptanceCriteria: [
+      "User can login with valid credentials",
+      "User receives error for invalid credentials",
+      "Password reset email is sent correctly",
+      "Session expires after inactivity"
+    ],
+  },
+  {
+    id: "2",
+    name: "Product Management",
+    description: "Allows administrators to manage product catalog including adding, editing, and deleting products with image upload support.",
+    testCasesCount: 12,
+    bugsCount: 1,
+    status: "pending",
+    progress: 0,
+    projectId: "1",
+    priority: "Medium",
+    isAIGenerated: true,
+    acceptanceCriteria: [
+      "Admin can add new products",
+      "Admin can edit existing products",
+      "Admin can delete products",
+      "Product images can be uploaded"
+    ],
+  },
+  {
+    id: "3",
+    name: "Checkout Process",
+    description: "Handles shopping cart and payment processing with multiple payment methods support including credit cards and PayPal.",
+    testCasesCount: 15,
+    bugsCount: 0,
+    status: "completed",
+    progress: 100,
+    projectId: "1",
+    priority: "High",
+    isAIGenerated: true,
+    acceptanceCriteria: [
+      "User can complete purchase",
+      "Payment is processed securely",
+      "Order confirmation email is sent",
+      "Multiple payment methods are supported"
+    ],
+  },
+  {
+    id: "4",
+    name: "Shopping Cart",
+    description: "Users can add, remove, and update items in their shopping cart. Includes quantity management and price calculations.",
+    testCasesCount: 6,
+    bugsCount: 0,
+    status: "in-progress",
+    progress: 80,
+    projectId: "1",
+    priority: "High",
+    isAIGenerated: false,
+    acceptanceCriteria: [
+      "User can add items to cart",
+      "User can remove items from cart",
+      "Cart total is calculated correctly",
+      "Cart persists across sessions"
+    ],
+  },
+  {
+    id: "5",
+    name: "User Profile Management",
+    description: "Users can view and edit their profile information including personal details, address, and preferences.",
+    testCasesCount: 5,
+    bugsCount: 1,
+    status: "pending",
+    progress: 20,
+    projectId: "1",
+    priority: "Medium",
+    isAIGenerated: false,
+    acceptanceCriteria: [
+      "User can view profile",
+      "User can edit profile information",
+      "Profile changes are saved correctly",
+      "Profile picture can be uploaded"
+    ],
+  },
+  {
+    id: "6",
+    name: "Order History",
+    description: "Users can view their order history with detailed information about each order including status and tracking.",
+    testCasesCount: 4,
+    bugsCount: 0,
+    status: "completed",
+    progress: 100,
+    projectId: "1",
+    priority: "Low",
+    isAIGenerated: true,
+    acceptanceCriteria: [
+      "User can view order history",
+      "Order details are displayed correctly",
+      "Order status is updated in real-time",
+      "Users can track orders"
+    ],
+  },
+];
 
 // Helper function to transform backend feature to frontend format
 function transformFeature(backendFeature: any): Feature {
@@ -44,6 +157,15 @@ function transformFeature(backendFeature: any): Feature {
 export const featureService = {
   // Fetch features for a project
   async fetchFeatures(projectId: string): Promise<Feature[]> {
+    // Use mock data (either when USE_MOCK_API=true or until backend is fully ready)
+    await new Promise(resolve => setTimeout(resolve, 800));
+    const base = mockFeatures.filter(f => f.projectId === projectId).length > 0
+      ? mockFeatures.filter(f => f.projectId === projectId)
+      : mockFeatures.map(f => ({ ...f, projectId }));
+
+    if (USE_MOCK_API) return base;
+
+    /* API call - commented out for mock data
     try {
       const response = await fetch(`${API_BASE_URL}/features/projects/${projectId}`, {
         method: 'GET',
@@ -69,10 +191,30 @@ export const featureService = {
       console.error('Error fetching features:', error);
       throw error;
     }
+    */
   },
 
   // Create a new feature
   async createFeature(projectId: string, featureData: { name: string; description: string; priority?: string }): Promise<Feature> {
+    if (USE_MOCK_API) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const newFeature: Feature = {
+        id: (mockFeatures.length + 1).toString(),
+        name: featureData.name,
+        description: featureData.description,
+        status: 'pending',
+        progress: 0,
+        projectId,
+        priority: (featureData.priority as any) || 'Medium',
+        testCasesCount: 0,
+        bugsCount: 0,
+        isAIGenerated: false,
+        acceptanceCriteria: [],
+      };
+      mockFeatures.push(newFeature);
+      return newFeature;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/features`, {
         method: 'POST',
@@ -106,6 +248,19 @@ export const featureService = {
 
   // Update feature status
   async updateFeatureStatus(featureId: string, status: Feature["status"]): Promise<Feature> {
+    if (USE_MOCK_API) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const index = mockFeatures.findIndex(f => f.id === featureId);
+      if (index !== -1) {
+        mockFeatures[index] = {
+          ...mockFeatures[index],
+          status,
+        };
+        return mockFeatures[index];
+      }
+      throw new Error('Feature not found');
+    }
+
     try {
       // Map frontend status to backend status
       const statusMap: Record<string, string> = {
@@ -146,6 +301,19 @@ export const featureService = {
 
   // Update feature
   async updateFeature(featureId: string, featureData: { name: string; description: string; priority?: string }): Promise<Feature> {
+    if (USE_MOCK_API) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      const index = mockFeatures.findIndex(f => f.id === featureId);
+      if (index === -1) {
+        throw new Error('Feature not found');
+      }
+      mockFeatures[index] = {
+        ...mockFeatures[index],
+        ...featureData,
+      };
+      return mockFeatures[index];
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/features/${featureId}`, {
         method: 'PUT',
@@ -176,6 +344,15 @@ export const featureService = {
 
   // Delete feature
   async deleteFeature(featureId: string): Promise<void> {
+    if (USE_MOCK_API) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const index = mockFeatures.findIndex(f => f.id === featureId);
+      if (index !== -1) {
+        mockFeatures.splice(index, 1);
+      }
+      return;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/features/${featureId}`, {
         method: 'DELETE',
@@ -296,6 +473,18 @@ export const featureService = {
 
   // Generate features from SRS using AI
   async generateAIFeatures(projectId: string, options?: any): Promise<Feature[]> {
+    if (USE_MOCK_API) {
+      // For mock mode, just reuse existing mock features and mark them as AI-generated for this project
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      const generated = mockFeatures.map(f => ({
+        ...f,
+        id: `${projectId}-${f.id}`,
+        projectId,
+        isAIGenerated: true,
+      }));
+      return generated;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/features/projects/${projectId}/generate-features`, {
         method: 'POST',
@@ -334,6 +523,28 @@ export const featureService = {
       expectedResult: string;
     }>;
   }>): Promise<Feature[]> {
+    if (USE_MOCK_API) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const created: Feature[] = features.map((f, idx) => {
+        const feature: Feature = {
+          id: `${projectId}-ai-${Date.now()}-${idx}`,
+          name: f.name,
+          description: f.description,
+          status: 'pending',
+          progress: 0,
+          projectId,
+          priority: 'Medium',
+          testCasesCount: f.testCases?.length || 0,
+          bugsCount: 0,
+          isAIGenerated: true,
+          acceptanceCriteria: [],
+        };
+        mockFeatures.push(feature);
+        return feature;
+      });
+      return created;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/features/bulk`, {
         method: 'POST',

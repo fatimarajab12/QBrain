@@ -174,15 +174,7 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   try {
     embeddings = await generateEmbeddingsBatch(chunks); // Uses text-embedding-3-small by default
     console.log(`Generated embeddings for all chunks using cost-optimized model`);
-    chunks.forEach((chunk, idx) => {
-      if (idx % 5 === 0) {
-        console.log(
-          `Embedding sample for chunk ${idx}:`,
-          embeddings[idx].slice(0, 5),
-          "..."
-        );
-      }
-    });
+  
   } catch (err) {
     console.warn(
       `Embedding generation failed: ${err.message}. Using fallback embeddings`
@@ -220,7 +212,6 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   await project.save();
   console.log("Project SRS data updated");
 
-  // Skip automatic feature and test case generation to reduce costs
   // Users can generate them manually from the UI when needed
   console.log("SRS processed successfully. Features and test cases can be generated manually from the UI.");
 

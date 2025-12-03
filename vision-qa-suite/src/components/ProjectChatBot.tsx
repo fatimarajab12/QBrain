@@ -107,7 +107,7 @@ const ProjectChatBot = ({ projectId, projectName }: ProjectChatBotProps) => {
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50",
+          "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg z-50",
           "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700",
           "text-white border-0 transition-all duration-300",
           "hover:scale-110 hover:shadow-xl",
@@ -118,75 +118,97 @@ const ProjectChatBot = ({ projectId, projectName }: ProjectChatBotProps) => {
         {isOpen ? (
           <X className="h-5 w-5" />
         ) : (
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
         )}
       </Button>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] z-50 animate-in slide-in-from-bottom-5 duration-300">
-          <Card className="h-full flex flex-col shadow-2xl border-2 border-cyan-500/20">
+        <>
+          {/* Overlay - Click outside to close */}
+          <div 
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 animate-in fade-in-0 duration-200"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+          
+          <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 max-w-[calc(100vw-2rem)] sm:max-w-md h-[calc(100vh-8rem)] sm:h-[600px] max-h-[calc(100vh-8rem)] sm:max-h-[600px] z-50 animate-in slide-in-from-bottom-5 duration-300">
+            <Card className="h-full flex flex-col shadow-2xl border-2 border-cyan-500/20 relative">
+            {/* Close Button - Top Right Corner */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(false)}
+              className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border-2 border-border shadow-lg hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all z-10"
+              title="Close chat"
+              aria-label="Close chat"
+            >
+              <X className="h-4 w-4" />
+            </Button>
             {/* Header */}
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-white" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20 px-3 sm:px-6">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                 </div>
-                <div>
-                  <CardTitle className="text-base">AI Assistant</CardTitle>
-                  <p className="text-xs text-muted-foreground">
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="text-sm sm:text-base truncate">AI Assistant</CardTitle>
+                  <p className="text-xs text-muted-foreground truncate">
                     {projectName || "Project Chat"}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={clearChat}
-                  className="h-8 w-8 p-0 text-xs"
+                  className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-xs hover:bg-muted"
                   title="Clear chat"
                 >
-                  Clear
+                  <span className="hidden sm:inline">Clear</span>
+                  <span className="sm:hidden text-[10px]">C</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 p-0"
+                  className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors rounded-full"
+                  title="Close chat"
+                  aria-label="Close chat"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </div>
             </CardHeader>
 
             {/* Messages */}
-            <CardContent className="flex-1 p-0 flex flex-col">
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
+            <CardContent className="flex-1 p-0 flex flex-col min-h-0">
+              <ScrollArea className="flex-1 p-2 sm:p-4">
+                <div className="space-y-3 sm:space-y-4">
                   {messages.map((message) => (
                     <div
                       key={message.id}
                       className={cn(
-                        "flex gap-3",
+                        "flex gap-2 sm:gap-3",
                         message.sender === "user" ? "justify-end" : "justify-start"
                       )}
                     >
                       {message.sender === "bot" && (
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 flex items-center justify-center flex-shrink-0">
-                          <Bot className="h-4 w-4 text-white" />
+                        <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 flex items-center justify-center flex-shrink-0">
+                          <Bot className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                         </div>
                       )}
                       <div
                         className={cn(
-                          "max-w-[80%] rounded-lg px-4 py-2",
+                          "max-w-[85%] sm:max-w-[80%] rounded-lg px-3 py-2 sm:px-4 sm:py-2",
                           message.sender === "user"
                             ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white"
                             : "bg-muted text-foreground"
                         )}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-                        <p className="text-xs opacity-70 mt-1">
+                        <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{message.text}</p>
+                        <p className="text-[10px] sm:text-xs opacity-70 mt-1">
                           {message.timestamp.toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -194,19 +216,19 @@ const ProjectChatBot = ({ projectId, projectName }: ProjectChatBotProps) => {
                         </p>
                       </div>
                       {message.sender === "user" && (
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                          <User className="h-4 w-4 text-muted-foreground" />
+                        <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                         </div>
                       )}
                     </div>
                   ))}
                   {isLoading && (
-                    <div className="flex gap-3 justify-start">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-white" />
+                    <div className="flex gap-2 sm:gap-3 justify-start">
+                      <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 flex items-center justify-center">
+                        <Bot className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                       </div>
-                      <div className="bg-muted rounded-lg px-4 py-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <div className="bg-muted rounded-lg px-3 py-2 sm:px-4 sm:py-2">
+                        <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-muted-foreground" />
                       </div>
                     </div>
                   )}
@@ -215,7 +237,7 @@ const ProjectChatBot = ({ projectId, projectName }: ProjectChatBotProps) => {
               </ScrollArea>
 
               {/* Input */}
-              <div className="border-t p-4 bg-card">
+              <div className="border-t p-2 sm:p-4 bg-card">
                 <div className="flex gap-2">
                   <Input
                     ref={inputRef}
@@ -224,12 +246,12 @@ const ProjectChatBot = ({ projectId, projectName }: ProjectChatBotProps) => {
                     onKeyPress={handleKeyPress}
                     placeholder="Ask about features, test cases..."
                     disabled={isLoading}
-                    className="flex-1"
+                    className="flex-1 text-sm sm:text-base"
                   />
                   <Button
                     onClick={handleSend}
                     disabled={isLoading || input.trim() === ""}
-                    className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
+                    className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 flex-shrink-0"
                     size="icon"
                   >
                     {isLoading ? (
@@ -243,6 +265,7 @@ const ProjectChatBot = ({ projectId, projectName }: ProjectChatBotProps) => {
             </CardContent>
           </Card>
         </div>
+        </>
       )}
     </>
   );
