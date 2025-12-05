@@ -2,8 +2,9 @@
 export interface TestCase {
   id: number;
   title: string;
+  description?: string;
   priority: "high" | "medium" | "low";
-  status: "passed" | "failed" | "pending";
+  status: "passed" | "failed" | "pending" | "in_progress" | "blocked";
   preconditions: string;
   steps: string[];
   expectedResult: string;

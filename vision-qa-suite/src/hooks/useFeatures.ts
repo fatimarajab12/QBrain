@@ -19,37 +19,48 @@ export const useFeatures = (projectId?: string) => {
   }, [projectId]);
 
   // fetch data from server 
-  const fetchFeatures = async (projectId: string) => {
+  const fetchFeatures = async (projectId: string, showLoading: boolean = true) => {
     try {
-      setIsLoading(true);
-      const featuresData = await featureService.fetchFeatures(parseInt(projectId));
-      //state to save data 
-      setFeatures(featuresData);
+      if (showLoading) {
+        setIsLoading(true);
+      }
+      const featuresData = await featureService.fetchFeatures(projectId);
       
-      //
+      // Force state update with a completely new array and objects to ensure re-render
+      // Use structuredClone to create deep copy and break any reference equality
+      const newFeatures = structuredClone ? structuredClone(featuresData) : featuresData.map(f => ({ ...f }));
+      console.log(`[fetchFeatures] Fetched ${newFeatures.length} features, updating state...`);
+      setFeatures(newFeatures);
+      console.log(`[fetchFeatures] State updated with ${newFeatures.length} features`);
       
       const hasAIFeatures = featuresData.some(feature => 
-        feature.name.includes('AI Generated') || feature.description.includes('AI Generated')
+        feature.isAIGenerated ||
+        feature.name.includes('AI Generated') || 
+        feature.description.includes('AI Generated')
       );
       setHasAIGeneratedFeatures(hasAIFeatures);
     } catch (error) {
       console.error('Error fetching features:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load project features",
-        variant: "destructive",
-      });
+      if (showLoading) {
+        toast({
+          title: "Error",
+          description: "Failed to load project features",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   };
 
-  const createFeature = async (featureData: { name: string; description: string }) => {
+  const createFeature = async (featureData: { name: string; description: string; acceptanceCriteria?: string[] }) => {
     if (!projectId) return;
     
     setIsCreating(true);
     try {
-      const createdFeature = await featureService.createFeature(parseInt(projectId), featureData);
+      const createdFeature = await featureService.createFeature(projectId, featureData);
       setFeatures(prev => [...prev, createdFeature]);
       
       toast({
@@ -160,7 +171,7 @@ export const useFeatures = (projectId?: string) => {
       // Use extracted text if available, otherwise extract from file
       let requirementsText = extractedText;
       
-      if (!requirementsText) {
+      if (!requirementsText && file) {
         toast({
           title: "Extracting Text",
           description: "Extracting text from document...",
@@ -168,35 +179,30 @@ export const useFeatures = (projectId?: string) => {
         requirementsText = await extractTextFromFile(file);
       }
 
-      // Step 1: Analyze requirements with AI
-      toast({
-        title: "Analyzing Requirements",
-        description: "AI is analyzing your requirements...",
-      });
-
-      const analysisResult = await featureService.analyzeRequirements(requirementsText);
-      
-      // Step 2: Create features from AI analysis
-      toast({
-        title: "Creating Features",
-        description: "Generating features and test cases...",
-      });
-
-      const createdFeatures = await featureService.createAIFeatures(
-        parseInt(projectId), 
-        analysisResult.features
+      // Generate features directly from SRS using the backend endpoint
+      const generatedFeatures = await featureService.generateAIFeatures(
+        projectId,
+        requirementsText ? { requirementsText } : {}
       );
-
-      // Step 3: Update state
-      setFeatures(prev => [...prev, ...createdFeatures]);
-      setHasAIGeneratedFeatures(true);
-
-      toast({
-        title: "Success!",
-        description: `Generated ${createdFeatures.length} features with AI`,
-      });
-
-      return createdFeatures;
+      
+      if (generatedFeatures && generatedFeatures.length > 0) {
+        setFeatures(prev => [...prev, ...generatedFeatures]);
+        setHasAIGeneratedFeatures(true);
+        
+        toast({
+          title: "Success!",
+          description: `Generated ${generatedFeatures.length} features with AI from SRS`,
+        });
+        
+        return generatedFeatures;
+      } else {
+        toast({
+          title: "No Features Generated",
+          description: "No features were generated. Please check your SRS document.",
+          variant: "destructive",
+        });
+        return [];
+      }
     } catch (error) {
       console.error('Error generating features with AI:', error);
       toast({
@@ -207,6 +213,128 @@ export const useFeatures = (projectId?: string) => {
       throw error;
     } finally {
       setIsGeneratingAI(false);
+    }
+  };
+
+  // Generate features directly from existing SRS
+  const generateFeaturesFromSRS = async (options?: any) => {
+    if (!projectId) {
+      toast({
+        title: "Error",
+        description: "Project ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    try {
+      toast({
+        title: "Generating Features",
+        description: "AI is generating features from SRS document...",
+      });
+
+      const generatedFeatures = await featureService.generateAIFeatures(
+        projectId,
+        options
+      );
+
+      // Don't update state here - features will be approved separately
+      return generatedFeatures;
+    } catch (error) {
+      console.error('Error generating features from SRS:', error);
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate features from SRS",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  // Approve and add generated features
+  const approveFeatures = async (approvedFeatures: Feature[]) => {
+    if (!projectId || approvedFeatures.length === 0) return;
+
+    // Prevent multiple simultaneous calls
+    if (isCreating) {
+      console.log('Approval already in progress, skipping...');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      // First, fetch existing features to check for duplicates
+      const existingFeatures = await featureService.fetchFeatures(projectId);
+      const existingNames = new Set(
+        existingFeatures.map(f => f.name.toLowerCase().trim())
+      );
+
+      // Filter out features that already exist (by name)
+      const uniqueFeaturesToCreate = approvedFeatures.filter(feature => {
+        const normalizedName = feature.name.toLowerCase().trim();
+        return !existingNames.has(normalizedName);
+      });
+
+      if (uniqueFeaturesToCreate.length === 0) {
+        toast({
+          title: "No New Features",
+          description: "All selected features already exist in the project.",
+          variant: "destructive",
+        });
+        return [];
+      }
+
+      if (uniqueFeaturesToCreate.length < approvedFeatures.length) {
+        toast({
+          title: "Some Features Skipped",
+          description: `${approvedFeatures.length - uniqueFeaturesToCreate.length} feature(s) were skipped because they already exist.`,
+        });
+      }
+
+      // Use bulk create for better performance
+      const featuresToCreate = uniqueFeaturesToCreate.map(feature => ({
+        name: feature.name,
+        description: feature.description,
+        priority: feature.priority || "Medium",
+        isAIGenerated: true,
+        acceptanceCriteria: feature.acceptanceCriteria || [],
+      }));
+
+      await featureService.createAIFeatures(
+        projectId,
+        featuresToCreate
+      );
+
+      console.log(`[approveFeatures] Features created, waiting a moment before fetch...`);
+      
+      // Small delay to ensure database has committed the changes
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Immediately fetch all features from server to update state
+      // Use fetchFeatures from hook (without loading spinner) to ensure state update
+      await fetchFeatures(projectId, false);
+      
+      console.log(`[approveFeatures] Features fetched and state updated`);
+
+      toast({
+        title: "Success!",
+        description: `Approved and added ${uniqueFeaturesToCreate.length} feature(s) successfully`,
+      });
+
+      return [];
+    } catch (error) {
+      console.error('Error approving features:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve features",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -222,5 +350,7 @@ export const useFeatures = (projectId?: string) => {
     updateFeature,
     deleteFeature,
     generateFeaturesFromAI,
+    generateFeaturesFromSRS,
+    approveFeatures,
   };
 };

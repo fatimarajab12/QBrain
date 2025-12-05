@@ -13,4 +13,9 @@ export interface Feature {
   updatedAt?: string;
   isAIGenerated?: boolean;
   acceptanceCriteria?: string[];
+  reasoning?: string;
+  matchedSections?: string[];
+  confidence?: number;
+  relevanceScore?: number;
+  rankingScore?: number;
 }

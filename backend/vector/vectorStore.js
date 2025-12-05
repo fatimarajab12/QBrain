@@ -152,13 +152,22 @@ class VectorStore {
   async deleteProject(projectId) {
     await this.ensureInitialized();
 
-    const { error } = await this.client
+    // Delete ALL vector documents for this project (SRS chunks, features, test cases, etc.)
+    const { data, error } = await this.client
       .from("project_vectors")
       .delete()
-      .eq("project_id", projectId);
+      .eq("project_id", projectId)
+      .select();
 
-    if (error) throw error;
-    console.log(`Deleted vectors for project ${projectId}`);
+    if (error) {
+      console.error(`Error deleting vectors for project ${projectId}:`, error);
+      throw error;
+    }
+    
+    const deletedCount = data?.length || 0;
+    console.log(`Deleted ${deletedCount} vector document(s) for project ${projectId} from Supabase`);
+    
+    return { deleted: deletedCount };
   }
 
   async deleteDocumentsByMetadata(projectId, metadataFilter) {

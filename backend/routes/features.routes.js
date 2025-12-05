@@ -5,6 +5,10 @@ const router = express.Router();
 
 router.get("/projects/:projectId/features", featuresController.getProjectFeatures);
 
+router.get("/projects/:projectId/has-ai-features", featuresController.checkHasAIGeneratedFeatures);
+
+router.get("/projects/:projectId/performance-metrics", featuresController.getPerformanceMetrics);
+
 router.post("/projects/:projectId/generate-features", featuresController.generateFeatures);
 
 router.post("/bulk", featuresController.bulkCreateFeatures);

@@ -1,9 +1,15 @@
 import express from "express";
 import * as testCasesController from "../controllers/testCasesController.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
+// Apply authentication middleware to all routes
+router.use(authenticate);
+
 router.get("/features/:featureId/test-cases", testCasesController.getFeatureTestCases);
+
+router.get("/features/:featureId/has-ai-test-cases", testCasesController.checkHasAIGeneratedTestCases);
 
 // Alternative shorter route for feature test cases
 router.get("/feature/:featureId", testCasesController.getFeatureTestCases);

@@ -1,4 +1,5 @@
 // pages/Dashboard.tsx
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjects } from "../hooks/useProjects";
@@ -10,14 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 const Dashboard = () => {
   const { projects, isLoading, isCreating, createProject, deleteProject } = useProjects();
   const { toast } = useToast();
+  const [deletingProjectId, setDeletingProjectId] = useState<string | number | null>(null);
 
   const handleCreateProject = async (projectData: { name: string; description: string }) => {
     try {
       const createdProject = await createProject(projectData);
-      toast({
-        title: "Project Created",
-        description: "Project has been created successfully",
-      });
+      // Note: Success toast is shown in CreateProjectDialog to avoid duplicate messages
       return createdProject ? { id: createdProject.id } : undefined;
     } catch (error: any) {
       toast({
@@ -30,11 +29,13 @@ const Dashboard = () => {
   };
 
   const handleDeleteProject = async (projectId: string | number) => {
+    const idToDelete = projectId.toString();
+    setDeletingProjectId(idToDelete);
     try {
-      await deleteProject(projectId.toString());
+      await deleteProject(idToDelete);
       toast({
         title: "Project Deleted",
-        description: "Project has been deleted successfully",
+        description: "Project and all associated data have been deleted successfully",
       });
     } catch (error: any) {
       toast({
@@ -42,6 +43,8 @@ const Dashboard = () => {
         description: error.message || "Failed to delete project",
         variant: "destructive",
       });
+    } finally {
+      setDeletingProjectId(null);
     }
   };
 
@@ -87,6 +90,7 @@ const Dashboard = () => {
                 key={project.id} 
                 project={project} 
                 onDelete={handleDeleteProject}
+                isDeleting={deletingProjectId === project.id || deletingProjectId === project._id}
               />
             ))}
           </div>

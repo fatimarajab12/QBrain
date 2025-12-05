@@ -102,7 +102,7 @@ const CreateBugDialog = ({ features, onCreate, isCreating }: CreateBugDialogProp
                   setNewBug({ ...newBug, severity: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -122,7 +122,7 @@ const CreateBugDialog = ({ features, onCreate, isCreating }: CreateBugDialogProp
                   setNewBug({ ...newBug, status: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -141,7 +141,7 @@ const CreateBugDialog = ({ features, onCreate, isCreating }: CreateBugDialogProp
               value={newBug.feature_id.toString()}
               onValueChange={(value) => setNewBug({ ...newBug, feature_id: parseInt(value) })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue placeholder="Select feature" />
               </SelectTrigger>
               <SelectContent>

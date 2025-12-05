@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useFeatures } from "../hooks/useFeatures";
 import FeatureCard from "./project-details/FeatureCard";
 import CreateFeatureDialog from "./project-details/CreateFeatureDialog";
+import AIGenerationDialog from "./project-details/AIGenerationDialog";
 import EmptyState from "./project-details/EmptyState";
 import BugsTab from "./project-details/BugTab";
 import { Bug } from "@/types/bug";
@@ -16,42 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { projectService } from "@/services/project.service";
 import { Project } from "@/types/project";
 
-// Mock bugs data - to be replaced with API calls
-const mockBugs: Bug[] = [
-  { 
-    id: 1, 
-    title: "Session expired", 
-    description: "User session expires too quickly after login",
-    feature_id: 1, 
-    project_id: 1, 
-    severity: "High" as const, 
-    status: "Open" as const,
-    created_at: "2024-01-15T10:30:00Z",
-    updated_at: "2024-01-15T10:30:00Z"
-  },
-  { 
-    id: 2, 
-    title: "Password validation", 
-    description: "Password requirements not clearly displayed",
-    feature_id: 1, 
-    project_id: 1, 
-    severity: "Medium" as const, 
-    status: "In Progress" as const,
-    created_at: "2024-01-14T14:20:00Z",
-    updated_at: "2024-01-15T09:15:00Z"
-  },
-  { 
-    id: 3, 
-    title: "UI alignment", 
-    description: "Login form elements misaligned on mobile",
-    feature_id: 2, 
-    project_id: 1, 
-    severity: "Low" as const, 
-    status: "Open" as const,
-    created_at: "2024-01-16T11:45:00Z",
-    updated_at: "2024-01-16T11:45:00Z"
-  }
-];
+// Bugs will be fetched from API
 
 const ProjectDetails = () => {
   const { projectId } = useParams();
@@ -60,17 +26,20 @@ const ProjectDetails = () => {
     features,
     isLoading,
     isCreating,
+    isGeneratingAI,
     createFeature,
     updateFeatureStatus,
     updateFeature,
     deleteFeature,
+    approveFeatures,
   } = useFeatures(projectId);
   
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
   const [activeTab, setActiveTab] = useState<"features" | "bugs">("features");
-  const [bugs, setBugs] = useState<Bug[]>(mockBugs);
+  const [bugs, setBugs] = useState<Bug[]>([]);
+  const [isLoadingBugs, setIsLoadingBugs] = useState(false);
   const [project, setProject] = useState<Project | null>(null);
 
   // Fetch project details
@@ -88,13 +57,29 @@ const ProjectDetails = () => {
     fetchProject();
   }, [projectId]);
 
-  // TODO: Fetch bugs from API
+  // Fetch bugs from API
   useEffect(() => {
-    // fetchBugs(projectId).then(setBugs);
-    console.log("Fetching bugs for project:", projectId);
-  }, [projectId]);
+    const fetchBugs = async () => {
+      if (!projectId) return;
+      
+      setIsLoadingBugs(true);
+      try {
+        // TODO: Replace with actual bugs API endpoint when available
+        // For now, bugs are empty array
+        setBugs([]);
+      } catch (error) {
+        console.error("Error fetching bugs:", error);
+      } finally {
+        setIsLoadingBugs(false);
+      }
+    };
+    
+    if (activeTab === "bugs") {
+      fetchBugs();
+    }
+  }, [projectId, activeTab]);
 
-  const handleCreateFeature = async (featureData: { name: string; description: string }) => {
+  const handleCreateFeature = async (featureData: { name: string; description: string; acceptanceCriteria?: string[] }) => {
     if (!projectId) return;
     await createFeature(featureData);
   };
@@ -116,15 +101,22 @@ const ProjectDetails = () => {
       setIsDeleting(false);
     }
   };
-  const handleAddBug = (bugData: Omit<Bug, 'id' | 'created_at' | 'updated_at'>) => {
-    // TODO: Replace with API call
-    const newBug: Bug = {
-      ...bugData,
-      id: Math.max(...bugs.map(b => b.id), 0) + 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    setBugs(prev => [...prev, newBug]);
+  const handleAddBug = async (bugData: Omit<Bug, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      // TODO: Replace with actual bugs API endpoint when available
+      // For now, just show a message
+      toast({
+        title: "Bug Creation",
+        description: "Bug creation API endpoint not yet implemented",
+      });
+    } catch (error) {
+      console.error("Error adding bug:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add bug",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUpdateBugStatus = async (bugId: number, status: Bug['status']) => {
@@ -234,7 +226,18 @@ const ProjectDetails = () => {
       {/* Tab Content */}
       {activeTab === "features" ? (
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <AIGenerationDialog
+              projectId={projectId!}
+              onApprove={async (approvedFeatures) => {
+                try {
+                  await approveFeatures(approvedFeatures);
+                } catch (error) {
+                  console.error("Error approving features:", error);
+                }
+              }}
+              isGenerating={isGeneratingAI}
+            />
             <CreateFeatureDialog 
               isCreating={isCreating}
               onCreate={handleCreateFeature}
@@ -245,10 +248,10 @@ const ProjectDetails = () => {
               onCreateFeature={() => document.querySelector<HTMLButtonElement>('[data-testid="create-feature-trigger"]')?.click()}
             />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {features.map((feature) => (
                 <FeatureCard
-                  key={feature.id}
+                  key={feature._id || feature.id || `feature-${feature.name}-${feature.id}`}
                   feature={feature}
                   projectId={projectId!}
                   onStatusChange={updateFeatureStatus}

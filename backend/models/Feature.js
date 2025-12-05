@@ -41,6 +41,20 @@ const featureSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    reasoning: {
+      type: String,
+      default: null,
+    },
+    matchedSections: {
+      type: [String],
+      default: [],
+    },
+    confidence: {
+      type: Number,
+      default: null,
+      min: 0,
+      max: 1,
+    },
     metadata: {
       type: Map,
       of: mongoose.Schema.Types.Mixed,
@@ -54,6 +68,11 @@ const featureSchema = new mongoose.Schema(
 
 featureSchema.index({ projectId: 1, status: 1 });
 featureSchema.index({ priority: 1 });
+// Compound unique index to prevent duplicate feature names within the same project
+featureSchema.index({ projectId: 1, name: 1 }, { 
+  unique: true,
+  partialFilterExpression: { name: { $exists: true } }
+});
 
 featureSchema.virtual("testCasesCount", {
   ref: "TestCase",

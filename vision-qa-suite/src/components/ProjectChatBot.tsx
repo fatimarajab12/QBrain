@@ -67,20 +67,54 @@ const ProjectChatBot = ({ projectId, projectName }: ProjectChatBotProps) => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const question = input;
     setInput("");
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      
+      const response = await fetch(`${API_BASE_URL}/ai/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+        },
+        body: JSON.stringify({
+          projectId,
+          question,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to get AI response');
+      }
+
+      const result = await response.json();
+      
       const botMessage: Message = {
         id: Date.now() + 1,
-        text: `I understand you're asking about "${input}". This is a mock response. In production, this would connect to the RAG system to provide accurate answers based on your project's SRS and documentation.`,
+        text: result.success && result.data?.answer 
+          ? result.data.answer 
+          : "I'm sorry, I couldn't process your question. Please try again.",
         sender: "bot",
         timestamp: new Date(),
       };
+      
       setMessages((prev) => [...prev, botMessage]);
+    } catch (error: any) {
+      console.error('Error querying AI:', error);
+      const errorMessage: Message = {
+        id: Date.now() + 1,
+        text: `Sorry, I encountered an error: ${error.message || 'Failed to get response'}. Please make sure your project has an SRS document uploaded.`,
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {

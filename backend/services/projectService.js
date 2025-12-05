@@ -7,6 +7,7 @@ import { Document } from "@langchain/core/documents";
 import fs from "fs";
 import * as featureService from "./featureService.js";
 import * as testCaseService from "./testCaseService.js";
+import { parsePDFWithDocumentAI, isDocumentAIConfigured } from "./documentAIService.js";
 
 
 function validateObjectId(id, fieldName = "ID") {
@@ -54,7 +55,76 @@ export async function updateProject(id, updateData) {
 }
 
 export async function deleteProject(id) {
-  await Project.findByIdAndDelete(id);
+  const projectId = validateObjectId(id, "Project ID");
+  
+  // Get project before deletion to access related data
+  const project = await Project.findById(projectId);
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
+  const projectIdString = project._id.toString();
+
+  try {
+    console.log(`Starting comprehensive deletion of project ${projectIdString} and ALL associated data...`);
+
+    // 1. Get all related data before deletion
+    const { Feature } = await import("../models/Feature.js");
+    const { TestCase } = await import("../models/TestCase.js");
+    
+    const features = await Feature.find({ projectId: projectId });
+    const featureIds = features.map(f => f._id.toString());
+    const testCases = await TestCase.find({ projectId: projectId });
+    
+    console.log(`Found: ${features.length} features, ${testCases.length} test cases`);
+
+    // 2. Delete ALL vector documents from Supabase (SRS chunks, features, test cases)
+    // This is done first to ensure all vector data is removed
+    try {
+      const result = await vectorStore.deleteProject(projectIdString);
+      console.log(`Deleted ${result?.deleted || 0} vector document(s) from Supabase (SRS chunks, features, test cases)`);
+    } catch (error) {
+      console.error(`Error deleting vector documents from Supabase:`, error);
+      // Continue with deletion even if vector store deletion fails
+    }
+
+    // 3. Delete test cases from MongoDB
+    const testCasesDeleted = await TestCase.deleteMany({ 
+      $or: [
+        { featureId: { $in: featureIds } },
+        { projectId: projectId }
+      ]
+    });
+    console.log(`Deleted ${testCasesDeleted.deletedCount} test case(s) from MongoDB`);
+
+    // 4. Delete features from MongoDB
+    const featuresDeleted = await Feature.deleteMany({ projectId: projectId });
+    console.log(`Deleted ${featuresDeleted.deletedCount} feature(s) from MongoDB`);
+
+    // 5. Delete SRS document file from filesystem
+    if (project.srsDocument && project.srsDocument.filePath) {
+      try {
+        if (fs.existsSync(project.srsDocument.filePath)) {
+          fs.unlinkSync(project.srsDocument.filePath);
+          console.log(`Deleted SRS file from filesystem: ${project.srsDocument.filePath}`);
+        }
+      } catch (error) {
+        console.error(`Error deleting SRS file from filesystem:`, error);
+      }
+    }
+
+    // 6. Finally, delete the project itself from MongoDB
+    await Project.findByIdAndDelete(projectId);
+    console.log(`Deleted project ${projectIdString} from MongoDB`);
+    
+    console.log(`Project ${projectIdString} and ALL associated data deleted successfully:`);
+    console.log(`   - MongoDB: Project, ${featuresDeleted.deletedCount} features, ${testCasesDeleted.deletedCount} test cases`);
+    console.log(`   - Supabase: All vector documents (SRS chunks, features, test cases)`);
+    console.log(`   - Filesystem: SRS document file`);
+  } catch (error) {
+    console.error("Error deleting project and associated data:", error);
+    throw error;
+  }
 }
 
 export async function getProjectStats(id) {
@@ -109,38 +179,34 @@ export async function uploadAndProcessSRS(projectId, filePath, fileName) {
   const projectIdString = project._id.toString();
 
   let text = "";
+  
   if (filePath.endsWith(".pdf")) {
-    // Dynamically import pdfjs-dist to avoid loading it unnecessarily
-    //legacy/build/pdf.mjs is used for Node.js compatibility
-    const PDFJS = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const dataBuffer = fs.readFileSync(filePath);
-    const uint8Array = new Uint8Array(dataBuffer);
-    /**
-      PDF file on server
-    ↓ (reading)
- Buffer - binary representation of the file
-    ↓ (conversion)
- Uint8Array - array of numbers (0-255) representing each byte
-     */
-
-    //Here we're telling the library: "Here's the PDF data, understand it and convert it to an object we can work with"
-    // Benefit: Creates a queryable PDF object with metadata and page access
-    const pdf = await PDFJS.getDocument({ data: uint8Array }).promise;
-    let fullText = "";
-    // Benefit: Processes each page individually to manage memory usage
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      // Extract all text elements with their metadata and positioning
-      // Benefit: Provides structured access to text fragments and formatting info
-      const textContent = await page.getTextContent();
-        
-      // Transform text fragments array into coherent sentences
-      const pageText = textContent.items.map((item) => item.str).join(" ");
-      fullText += pageText + "\n";
+    // Use Document AI only (better accuracy, OCR support, Arabic text, tables extraction)
+    if (!isDocumentAIConfigured()) {
+      throw new Error(
+        "Document AI is not configured. Please ensure:\n" +
+        "1. GCP_PROJECT_ID is set in .env\n" +
+        "2. GCP_KEY_FILE is set in .env\n" +
+        "3. DOCUMENT_AI_PROCESSOR_ID is set in .env\n" +
+        "See backend/DOCUMENT_AI_SETUP.md for setup instructions."
+      );
     }
-    text = fullText.trim();
+    
+    console.log("Parsing PDF with Document AI...");
+    const documentAIResult = await parsePDFWithDocumentAI(filePath);
+    text = documentAIResult.text;
+    
+    // Log additional extracted data
+    if (documentAIResult.tables && documentAIResult.tables.length > 0) {
+      console.log(`Document AI extracted ${documentAIResult.tables.length} tables from the PDF`);
+    }
+    if (documentAIResult.forms && documentAIResult.forms.length > 0) {
+      console.log(`Document AI extracted ${documentAIResult.forms.length} form fields from the PDF`);
+    }
+    
     console.log(
-      `PDF parsed successfully. Text length: ${text.length} characters`
+      `PDF parsed successfully with Document AI. Text length: ${text.length} characters, ` +
+      `Pages: ${documentAIResult.pages}`
     );
   } else if (filePath.endsWith(".txt")) {
     text = fs.readFileSync(filePath, "utf-8");

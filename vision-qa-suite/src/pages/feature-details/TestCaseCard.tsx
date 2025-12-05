@@ -94,13 +94,28 @@ const TestCaseCard = ({ testCase, onEdit, onDelete, onStatusUpdate, onPriorityUp
                   value={testCase.priority}
                   onValueChange={(value: "high" | "medium" | "low") => onPriorityUpdate(testCase.id, value)}
                 >
-                  <SelectTrigger className={`h-6 w-auto px-2 ${getPriorityColor(testCase.priority)} border-0`}>
+                  <SelectTrigger className={`h-10 w-[120px] ${getPriorityColor(testCase.priority)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="high">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                        High
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="medium">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                        Medium
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="low">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        Low
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               ) : (

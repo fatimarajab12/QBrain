@@ -164,6 +164,9 @@ For each feature, provide:
 - priority: High, Medium, or Low
 - status: pending, in_progress, or completed
 - acceptanceCriteria: array of acceptance criteria strings
+- reasoning: explanation of why this feature matches the SRS requirements (2-3 sentences)
+- matchedSections: array of SRS section references that support this feature (e.g., ["3.2.1", "4.1"])
+- confidence: confidence score between 0 and 1 (how confident you are this feature is correct)
 
 IMPORTANT: Return ONLY a valid JSON array, no markdown code blocks, no explanations, no additional text. Start with [ and end with ].
 
@@ -180,7 +183,48 @@ Generate features as JSON array:`);
 
     const features = Array.isArray(parsed) ? parsed : parsed.features || [];
 
-    return features;
+    // Add ranking scores and enhance with context information
+    const enhancedFeatures = features.map((feature, index) => {
+      // Find matching context chunks for this feature
+      const featureQuery = `${feature.name} ${feature.description}`;
+      const matchingChunks = contextChunks.filter(chunk => {
+        const chunkText = chunk.text.toLowerCase();
+        const featureText = featureQuery.toLowerCase();
+        return chunkText.includes(feature.name.toLowerCase()) || 
+               featureText.includes(chunk.text.substring(0, 50).toLowerCase());
+      });
+
+      // Calculate relevance score based on matching chunks
+      const relevanceScore = matchingChunks.length > 0
+        ? matchingChunks.reduce((sum, chunk) => sum + chunk.relevance, 0) / matchingChunks.length
+        : 0.5; // Default score if no direct match
+
+      // Calculate priority score (High=3, Medium=2, Low=1)
+      const priorityScore = feature.priority === 'High' ? 3 : 
+                           feature.priority === 'Medium' ? 2 : 1;
+
+      // Calculate weighted ranking score
+      const rankingScore = (
+        (relevanceScore * 0.5) +           // 50% weight on relevance
+        (priorityScore / 3 * 0.3) +        // 30% weight on priority
+        ((feature.confidence || 0.7) * 0.2) // 20% weight on confidence
+      );
+
+      return {
+        ...feature,
+        relevanceScore: Math.round(relevanceScore * 100) / 100,
+        rankingScore: Math.round(rankingScore * 100) / 100,
+        matchedChunksCount: matchingChunks.length,
+        reasoning: feature.reasoning || `This feature is derived from SRS requirements related to ${feature.name.toLowerCase()}.`,
+        matchedSections: feature.matchedSections || [],
+        confidence: feature.confidence || 0.7,
+      };
+    });
+
+    // Sort by ranking score (highest first)
+    enhancedFeatures.sort((a, b) => b.rankingScore - a.rankingScore);
+
+    return enhancedFeatures;
   } catch (error) {
     console.error("Error generating features from RAG:", error);
     throw error;

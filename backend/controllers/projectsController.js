@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB - allows large documents with many pages
   fileFilter: (req, file, cb) => {
     const allowedTypes = [".pdf", ".txt"];
     const ext = path.extname(file.originalname).toLowerCase();
@@ -34,12 +34,20 @@ export const upload = multer({
 export const createProject = async (req, res) => {
   try {
     const { name, description, status } = req.body;
-    const userId = req.user?.id || req.body.userId;
+    // Use authenticated user ID from middleware
+    const userId = req.user?._id || req.userId || req.body.userId;
 
     if (!name) {
       return res.status(400).json({
         success: false,
         message: "Project name is required",
+      });
+    }
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required. Please ensure you are authenticated.",
       });
     }
 
@@ -93,12 +101,13 @@ export const getProject = async (req, res) => {
 
 export const getUserProjects = async (req, res) => {
   try {
-    const userId = req.user?.id || req.query.userId;
+    // Use authenticated user ID from middleware
+    const userId = req.user?._id || req.userId || req.query.userId;
 
     if (!userId) {
       return res.status(400).json({
         success: false,
-        message: "User ID is required",
+        message: "User ID is required. Please ensure you are authenticated.",
       });
     }
 
@@ -151,6 +160,28 @@ export const updateProject = async (req, res) => {
 export const deleteProject = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?._id || req.userId;
+
+    // Verify that the project belongs to the authenticated user
+    const project = await projectService.getProjectById(id);
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    // Check if user owns the project
+    const projectUserId = project.userId?._id?.toString() || project.userId?.toString() || project.userId;
+    const currentUserId = userId?.toString();
+    
+    if (projectUserId !== currentUserId) {
+      return res.status(403).json({
+        success: false,
+        message: "You don't have permission to delete this project",
+      });
+    }
+
     await projectService.deleteProject(id);
 
     res.status(200).json({

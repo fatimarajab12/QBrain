@@ -115,6 +115,20 @@ export async function getTestCaseById(testCaseId) {
   }
 }
 
+export async function hasAIGeneratedTestCases(featureId) {
+  try {
+    const featureIdObj = validateObjectId(featureId, "Feature ID");
+    const count = await TestCase.countDocuments({ 
+      featureId: featureIdObj,
+      isAIGenerated: true 
+    });
+    return count > 0;
+  } catch (error) {
+    console.error("Error checking AI-generated test cases:", error);
+    throw error;
+  }
+}
+
 export async function getFeatureTestCases(featureId) {
   try {
     const id = validateObjectId(featureId, "Feature ID");

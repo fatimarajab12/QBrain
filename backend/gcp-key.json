@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "upbeat-voice-480223-v5",
+  "private_key_id": "d6ecc776996210a48554d98f19d8cc57479d9bf8",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCfEup6OmvMGC2v\nKK3QEVbiwC9l+IjJBKVb+SoflM6zfVTKnVAJD4GnvUXatmEyh33tYOqdjeve+Ogc\n7RzDtgvT8QPutapM6m7PybvpAlak9KAMn3NgAOsszg5+KNfPhw6swLiwtsjSO63u\n/Y/WCLbWdG3j6TNUyeXrSlE1fWVFJ3fLComipDiqPTAaU/SnFgn4fuVXmY2H/nL1\n1haZD1ZHMPV6L7TH5llM0ndCb/tKk5uQIjroee97yFydz97cWswQyCdR31uSkNyY\nxJ7m48pY4NLnKt0G6dLgRP8gXD1KsXxk0j4DJrKC/9qVN7xjvAc+sWzvrJBjR5jP\n0BfVIY5TAgMBAAECggEAJ61Fq/AHdDQxrOdWFzhD9jHegK4xnAYbIqou3gq1VeK0\ndAcx79icy9RzaH6mFr7h44QRcPP1ubtW1eQ0kQJGx/ntM6y/SgkNU6mrQ46wQtu7\nUfqxgegowJey2LfiQGKc/+zgBD/LLljxZNN8/XNV+3617Ct+AK+NOBdk0xUwXcN6\nEDmsqeXiA2YQUfJ/j1Pgm+6p4HRoqTmLvx+MKTAx6lWfb5oSAZ/07DBxho8+JeM8\n02Y8z5cse3UiCe5h48Q47T4SconuzKRPiHIbmX7mdeZkUU5Ks5v/SVwLN+T5YFWA\nb314Z/11KWiBlowDNd7R/PJqCVE91JfwjagqPGtVVQKBgQDV6tb30/qY/OiJshyT\nAe/4ciXlHLLP0cqjZSMgAeyLOPx1d4vdKD6I8KXa6h5XJn//Kih76Xxo5FCP9F6e\nJ2X8pyJBRjvjoN91RSUFnMXhYEzr09KF/0gGgax//OWo6iWCwMdIRsDBc6a2tTb2\n2IihOS4MzcNQFgcUM9Df5Q3xLwKBgQC+XhZhJdyH3D/VVas9gKrxomxcVmW1pPDe\ndL9ovxTGbWAce2yW0ObRFgQJtmOv4m+bct8Mgxj+ZSPZfLNaJ0VX07gN7I+9B9/1\n6CQOuIKYJAPx2t7PyslZ9iH3YClgDqh7RAcT4Dd5OatEAp6nBckaThRJG35hFx+4\nzjHB+p+EHQKBgHE+XwrXd0RiLqAmYCYa0nTNyO3fIXIO951EPzIEkrqpMkzlOm+b\njG9mJgccBW/Re9US9leSpT/KDjQHA8fpx33W5LV1fuLkGSe1sQGlmsPS/SWi/0Hc\ngL6hCza+JL4lJjJv54+FlSlUFh+HE0/eFYZ0BMLWct0ErD6vp5W/ZoAVAoGADud4\n4xQ+xthEmyRA6ujG+XIY/8W34tfOD+yeC8piCwMHMlOrdcdXOul5WXVRKrUUvdvp\ngKZG76vleaKcvCM096JY16Y8vrT+INeS8yAZAWZYdLgJF8WtrABsOlzqAF5FbJkv\n4Kt+TFxqf0GhQDxguVGBnxOq+lkAH8zs8l333TUCgYEA0at6k1gmP0eyyudxGZEh\nZBXx/YZAoHRLE/tjFPz2LBKML2HbajzI0GCGgO7+6uqIs+ZCTS0W2A4bSB9MW9lK\n5aTbEnUyG2ckCr0soM44FcjrtWtDI+ts6j8advLi1CQHCUPaZaXML6X9xWqJN3eo\nYjKK1CVZA59UkQUWn3sgFHw=\n-----END PRIVATE KEY-----\n",
+  "client_email": "vision-qa-service@upbeat-voice-480223-v5.iam.gserviceaccount.com",
+  "client_id": "109873305665895647687",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/vision-qa-service%40upbeat-voice-480223-v5.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

@@ -141,6 +141,25 @@ export const checkTestCaseExists = async (req, res) => {
   }
 };
 
+export const checkHasAIGeneratedTestCases = async (req, res) => {
+  try {
+    const { featureId } = req.params;
+    const hasAIGenerated = await testCaseService.hasAIGeneratedTestCases(featureId);
+
+    res.status(200).json({
+      success: true,
+      hasAIGenerated,
+    });
+  } catch (error) {
+    console.error("Check AI-generated test cases error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error checking AI-generated test cases",
+      error: error.message,
+    });
+  }
+};
+
 export const getFeatureTestCases = async (req, res) => {
   try {
     const { featureId } = req.params;

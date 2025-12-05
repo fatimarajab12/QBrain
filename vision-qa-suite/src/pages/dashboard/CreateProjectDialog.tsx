@@ -78,6 +78,12 @@ const CreateProjectDialog = ({ isCreating, onCreateProject }: CreateProjectDialo
         throw new Error('Failed to create project - no ID returned');
       }
       
+      // Show success message for project creation
+      toast({
+        title: "Project Created Successfully",
+        description: `Project "${newProject.name}" has been created successfully.`,
+      });
+      
       // If SRS file is selected and project was created, upload it
       if (selectedFile && createdProject.id) {
         setIsUploadingSRS(true);
@@ -90,7 +96,7 @@ const CreateProjectDialog = ({ isCreating, onCreateProject }: CreateProjectDialo
         } catch (error: any) {
           console.error('Error uploading SRS:', error);
           toast({
-            title: "Project Created",
+            title: "SRS Upload Failed",
             description: error.message || "Project created successfully, but SRS upload failed. You can upload it later.",
             variant: "default",
           });

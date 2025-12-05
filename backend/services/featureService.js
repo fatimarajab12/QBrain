@@ -79,6 +79,20 @@ export async function getFeatureById(featureId) {
   }
 }
 
+export async function hasAIGeneratedFeatures(projectId) {
+  try {
+    const projectIdObj = validateObjectId(projectId, "Project ID");
+    const count = await Feature.countDocuments({ 
+      projectId: projectIdObj,
+      isAIGenerated: true 
+    });
+    return count > 0;
+  } catch (error) {
+    console.error("Error checking AI-generated features:", error);
+    throw error;
+  }
+}
+
 export async function getProjectFeatures(projectId) {
   try {
     const id = validateObjectId(projectId, "Project ID");
@@ -225,11 +239,30 @@ export async function generateFeaturesFromSRS(projectId, options = {}) {
 
     const savedFeatures = [];
     for (const featureData of generatedFeatures) {
+      // Extract ranking and explanation data before saving
+      const {
+        relevanceScore,
+        rankingScore,
+        matchedChunksCount,
+        reasoning,
+        matchedSections,
+        confidence,
+        ...featureFields
+      } = featureData;
+
       const feature = await createFeature({
-        ...featureData,
+        ...featureFields,
         projectId: id,
         isAIGenerated: true,
-        aiGenerationContext: JSON.stringify(options),
+        aiGenerationContext: JSON.stringify({
+          ...options,
+          relevanceScore,
+          rankingScore,
+          matchedChunksCount,
+        }),
+        reasoning: reasoning || null,
+        matchedSections: matchedSections || [],
+        confidence: confidence || null,
       });
       savedFeatures.push(feature);
     }
@@ -250,14 +283,64 @@ export async function bulkCreateFeatures(projectId, featuresData) {
       throw new Error("Project not found");
     }
 
+    // Check for existing features to prevent duplicates
+    const existingFeatures = await Feature.find({ projectId: id }).select("name").lean();
+    const existingNames = new Set(
+      existingFeatures.map(f => f.name.toLowerCase().trim())
+    );
+
+    // Filter out duplicates before creating
+    const uniqueFeaturesData = featuresData.filter(featureData => {
+      const normalizedName = (featureData.name || "").toLowerCase().trim();
+      return !existingNames.has(normalizedName);
+    });
+
+    if (uniqueFeaturesData.length === 0) {
+      console.log("All features already exist, skipping creation");
+      return [];
+    }
+
+    if (uniqueFeaturesData.length < featuresData.length) {
+      console.log(`Filtered out ${featuresData.length - uniqueFeaturesData.length} duplicate features`);
+    }
+
     const features = [];
-    for (const featureData of featuresData) {
-      const feature = new Feature({
-        ...featureData,
-        projectId: id,
+    const session = await mongoose.startSession();
+    
+    try {
+      await session.withTransaction(async () => {
+        for (const featureData of uniqueFeaturesData) {
+          try {
+            // Double-check for duplicates within the transaction
+            const normalizedName = (featureData.name || "").toLowerCase().trim();
+            const existing = await Feature.findOne({
+              projectId: id,
+              name: { $regex: new RegExp(`^${normalizedName}$`, "i") }
+            }).session(session);
+
+            if (existing) {
+              console.log(`Feature "${featureData.name}" already exists, skipping`);
+              continue;
+            }
+
+            const feature = new Feature({
+              ...featureData,
+              projectId: id,
+            });
+            await feature.save({ session });
+            features.push(feature);
+          } catch (saveError) {
+            // Handle duplicate key error gracefully
+            if (saveError.code === 11000) {
+              console.log(`Feature "${featureData.name}" already exists (duplicate key), skipping`);
+              continue;
+            }
+            throw saveError;
+          }
+        }
       });
-      await feature.save();
-      features.push(feature);
+    } finally {
+      await session.endSession();
     }
 
     return features;
