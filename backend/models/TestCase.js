@@ -72,6 +72,66 @@ const testCaseSchema = new mongoose.Schema(
       of: mongoose.Schema.Types.Mixed,
       default: {},
     },
+    evaluation: {
+      score: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: null,
+      },
+      criteria: {
+        quality: {
+          type: Number,
+          min: 0,
+          max: 100,
+          default: null,
+        },
+        completeness: {
+          type: Number,
+          min: 0,
+          max: 100,
+          default: null,
+        },
+        coverage: {
+          type: Number,
+          min: 0,
+          max: 100,
+          default: null,
+        },
+        clarity: {
+          type: Number,
+          min: 0,
+          max: 100,
+          default: null,
+        },
+        srsAlignment: {
+          type: Number,
+          min: 0,
+          max: 100,
+          default: null,
+        },
+      },
+      feedback: {
+        type: String,
+        default: null,
+      },
+      strengths: {
+        type: [String],
+        default: [],
+      },
+      improvements: {
+        type: [String],
+        default: [],
+      },
+      evaluatedAt: {
+        type: Date,
+        default: null,
+      },
+      evaluatedBy: {
+        type: String,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,

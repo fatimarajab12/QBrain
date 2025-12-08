@@ -165,11 +165,7 @@ export async function parsePDFWithDocumentAI(filePath) {
   }
 }
 
-/**
- * Fallback function to parse PDF using pdf-parse when Document AI fails due to page limit
- * @param {string} filePath - Path to the PDF file
- * @returns {Promise<Object>} Parsed document with text, tables, forms, and pages
- */
+
 async function parsePDFWithFallback(filePath) {
   try {
     console.log(`Parsing PDF with pdf-parse fallback: ${filePath}`);
@@ -221,11 +217,7 @@ async function parsePDFWithFallback(filePath) {
   }
 }
 
-/**
- * Process a single PDF chunk with Document AI (without splitting)
- * @param {string} filePath - Path to the PDF chunk file
- * @returns {Promise<Object>} Parsed document
- */
+
 async function processPDFChunk(filePath) {
   try {
     const imageFile = fs.readFileSync(filePath);
@@ -315,12 +307,7 @@ async function processPDFChunk(filePath) {
   }
 }
 
-/**
- * Split PDF into smaller chunks and process each with Document AI
- * @param {string} filePath - Path to the PDF file
- * @param {number} maxPagesPerChunk - Maximum pages per chunk (default: 30)
- * @returns {Promise<Object>} Merged parsed document with text, tables, forms, and pages
- */
+
 async function parsePDFWithSplitting(filePath, maxPagesPerChunk = 15) {
   try {
     console.log(`Splitting PDF into chunks (max ${maxPagesPerChunk} pages per chunk): ${filePath}`);

@@ -196,7 +196,7 @@ const handleUpdateBugStatus = async (bugId: number, status: Bug['status']) => {
   }
 };
 
-const handleDeleteTestCase = async (testCaseId: number) => {
+const handleDeleteTestCase = async (testCaseId: string) => {
   setIsDeleting(true);
   try {
     await deleteTestCase(testCaseId);
@@ -341,6 +341,36 @@ const clearFilters = () => {
 
             <Separator />
 
+            {/* Feature Type and SRS Sections */}
+            {(feature.featureType || (feature.matchedSections && feature.matchedSections.length > 0)) && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Feature Information</h3>
+                <div className="flex flex-wrap gap-2">
+                  {feature.featureType && (
+                    <Badge variant="outline" className="gap-1">
+                      <FileText className="h-3 w-3" />
+                      Type: {feature.featureType}
+                    </Badge>
+                  )}
+                  {feature.matchedSections && feature.matchedSections.length > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-muted-foreground">SRS Sections:</span>
+                      {feature.matchedSections.map((section, idx) => (
+                        <Badge key={idx} variant="secondary" className="font-mono">
+                          {section}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Separator if Feature Information exists */}
+            {(feature.featureType || (feature.matchedSections && feature.matchedSections.length > 0)) && (
+              <Separator />
+            )}
+
             {/* Acceptance Criteria */}
             {feature.acceptanceCriteria && feature.acceptanceCriteria.length > 0 && (
               <div className="space-y-3">
@@ -364,11 +394,8 @@ const clearFilters = () => {
               <>
                 <Separator />
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">AI Reasoning</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground ml-7 leading-relaxed">
+                  <h3 className="text-lg font-semibold">AI Reasoning</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {feature.reasoning}
                   </p>
                 </div>
@@ -380,11 +407,8 @@ const clearFilters = () => {
               <>
                 <Separator />
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">Matched SRS Sections</h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2 ml-7">
+                  <h3 className="text-lg font-semibold">Matched SRS Sections</h3>
+                  <div className="flex flex-wrap gap-2">
                     {feature.matchedSections.map((section, idx) => (
                       <Badge key={idx} variant="secondary">
                         {section}
@@ -395,25 +419,6 @@ const clearFilters = () => {
               </>
             )}
 
-            {/* AI Confidence */}
-            {feature.confidence !== undefined && feature.confidence !== null && (
-              <>
-                <Separator />
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">AI Confidence</h3>
-                  </div>
-                  <div className="ml-7 space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Confidence Score</span>
-                      <span className="font-medium">{Math.round(feature.confidence * 100)}%</span>
-                    </div>
-                    <Progress value={feature.confidence * 100} className="h-3" />
-                  </div>
-                </div>
-              </>
-            )}
           </CardContent>
         </Card>
       )}
@@ -429,6 +434,8 @@ const clearFilters = () => {
           <AITestCaseGenerationDialog
             featureId={featureId || ""}
             featureName={feature?.name}
+            featureType={feature?.featureType}
+            matchedSections={feature?.matchedSections}
             onApprove={async (approvedTestCases) => {
               // Convert TestCase[] to Omit<TestCase, 'id'>[] for bulk create
               const testCasesToCreate = approvedTestCases.map(tc => ({

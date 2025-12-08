@@ -116,7 +116,7 @@ export const useTestCases = (featureId?: string) => {
     }
   };
 
-  const deleteTestCase = async (testCaseId: number) => {
+  const deleteTestCase = async (testCaseId: string) => {
     try {
       await testCaseService.deleteTestCase(testCaseId);
       setTestCases(prev => prev.filter(tc => tc.id !== testCaseId));
@@ -136,7 +136,7 @@ export const useTestCases = (featureId?: string) => {
     }
   };
 
-  const updateTestCaseStatus = async (testCaseId: number, status: "passed" | "failed") => {
+  const updateTestCaseStatus = async (testCaseId: string, status: "passed" | "failed") => {
     try {
       const updatedTestCase = await testCaseService.updateTestCaseStatus(testCaseId, status);
       setTestCases(prev => 
@@ -158,7 +158,7 @@ export const useTestCases = (featureId?: string) => {
     }
   };
 
-  const updateTestCasePriority = async (testCaseId: number, priority: "high" | "medium" | "low") => {
+  const updateTestCasePriority = async (testCaseId: string, priority: "high" | "medium" | "low") => {
     try {
       const updatedTestCase = await testCaseService.updateTestCase(testCaseId, { priority });
       setTestCases(prev => 

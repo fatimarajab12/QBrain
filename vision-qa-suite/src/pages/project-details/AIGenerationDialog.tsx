@@ -408,11 +408,6 @@ const AIGenerationDialog = ({ projectId, onApprove, isGenerating: isGeneratingFr
                                 Score: {feature.rankingScore.toFixed(2)}
                               </Badge>
                             )}
-                            {feature.confidence && (
-                              <Badge variant="outline" className="text-xs">
-                                Confidence: {(feature.confidence * 100).toFixed(0)}%
-                              </Badge>
-                            )}
                             {feature.priority && (
                               <Badge 
                                 variant={

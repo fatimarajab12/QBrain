@@ -32,23 +32,23 @@ const MOBILE_BREAKPOINT = 768;
 const cardData: BentoCardProps[] = [
   {
     color: 'hsl(var(--card))',
-    title: 'AI Test Generator',
-    description: 'Automatically generate comprehensive test cases from feature descriptions using advanced NLP',
+    title: 'Save Time & Resources',
+    description: 'Reduce test case creation time by up to 80%',
   },
   {
     color: 'hsl(var(--card))',
-    title: 'Bug Analyzer',
-    description: 'Classify and analyze bug reports intelligently with severity detection and fix suggestions',
+    title: 'AI-Powered Intelligence',
+    description: 'Advanced AI and RAG technology for accurate results',
   },
   {
     color: 'hsl(var(--card))',
-    title: 'Smart Dashboard',
-    description: 'Track test results, bug trends, and visual changes in real-time with interactive charts',
+    title: 'Real-time Analytics',
+    description: 'Track coverage, bugs, and progress with detailed reports',
   },
   {
     color: 'hsl(var(--card))',
-    title: 'Project Management',
-    description: 'Organize tests by projects and features with team collaboration capabilities',
+    title: 'Enterprise Ready',
+    description: 'Scale from small projects to enterprise-level QA',
   }
 ];
 

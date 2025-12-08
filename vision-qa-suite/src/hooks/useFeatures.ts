@@ -55,7 +55,15 @@ export const useFeatures = (projectId?: string) => {
     }
   };
 
-  const createFeature = async (featureData: { name: string; description: string; acceptanceCriteria?: string[] }) => {
+  const createFeature = async (featureData: { 
+    name: string; 
+    description: string; 
+    priority?: "High" | "Medium" | "Low";
+    featureType?: "FUNCTIONAL" | "DATA" | "WORKFLOW" | "QUALITY" | "INTERFACE" | "REPORT" | "CONSTRAINT" | "NOTIFICATION";
+    acceptanceCriteria?: string[];
+    matchedSections?: string[];
+    reasoning?: string;
+  }) => {
     if (!projectId) return;
     
     setIsCreating(true);

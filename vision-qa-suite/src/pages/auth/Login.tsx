@@ -11,12 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Sparkles, ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { LoginForm } from "@/types/auth";
 import { validateEmail } from "@/utils/auth-helpers";
-import PixelBlast from "@/components/custom/DotGrid";
 import AuthLayout from "./AuthLayout";
 
 interface LoginProps {
@@ -34,6 +33,7 @@ const Login = ({ onSwitchToSignup }: LoginProps) => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     // Validation
     if (!loginForm.email || !loginForm.password) {
@@ -43,6 +43,11 @@ const Login = ({ onSwitchToSignup }: LoginProps) => {
 
     if (!validateEmail(loginForm.email)) {
       setError("Please enter a valid email address");
+      return;
+    }
+
+    if (loginForm.password.length < 6) {
+      setError("Password must be at least 6 characters long");
       return;
     }
 
@@ -76,32 +81,23 @@ const Login = ({ onSwitchToSignup }: LoginProps) => {
     setError(null);
   };
 
-  const handleDemoLogin = async () => {
-    setLoginForm({
-      email: "demo@qa.com",
-      password: "demo123"
-    });
-    
-    // Auto-submit after a brief delay to show the filled fields
-    setTimeout(() => {
-      const form = document.querySelector<HTMLFormElement>('form');
-      if (form) {
-        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-      }
-    }, 500);
-  };
 
   return (
     <AuthLayout title="Welcome back" description="Sign in to your account to continue">
-      <form onSubmit={handleLogin} className="space-y-4">
+      <form onSubmit={handleLogin} className="space-y-5">
         {error && (
-          <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg border border-destructive/20">
-            {error}
+          <div className="p-4 bg-destructive/10 text-destructive text-sm rounded-lg border border-destructive/30 backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
+              {error}
+            </div>
           </div>
         )}
         
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email" className="text-sm font-medium text-foreground/90">
+            Email
+          </Label>
           <Input
             id="email"
             type="email"
@@ -110,11 +106,24 @@ const Login = ({ onSwitchToSignup }: LoginProps) => {
             onChange={(e) => updateLoginForm("email", e.target.value)}
             required
             disabled={isLoading}
+            className="h-11 border-border/50 focus:border-cyan-500/50 focus:ring-cyan-500/20 transition-all duration-200"
           />
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-sm font-medium text-foreground/90">
+              Password
+            </Label>
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-xs text-cyan-500 hover:text-cyan-400 transition-colors disabled:opacity-50 font-medium"
+              disabled={isLoading}
+            >
+              Forgot password?
+            </button>
+          </div>
           <Input
             id="password"
             type="password"
@@ -123,44 +132,37 @@ const Login = ({ onSwitchToSignup }: LoginProps) => {
             onChange={(e) => updateLoginForm("password", e.target.value)}
             required
             disabled={isLoading}
+            className="h-11 border-border/50 focus:border-cyan-500/50 focus:ring-cyan-500/20 transition-all duration-200"
           />
         </div>
         
         <Button
           type="submit"
-          className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25"
+          className="w-full h-11 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 hover:from-cyan-400 hover:via-blue-400 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] font-semibold"
           disabled={isLoading}
         >
           {isLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : null}
-          {isLoading ? "Signing in..." : "Sign In"}
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            "Sign In"
+          )}
         </Button>
 
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={handleForgotPassword}
-            className="text-sm text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-            disabled={isLoading}
-          >
-            Forgot password?
-          </button>
-        </div>
-
-        {/* Demo credentials button */}
-        
-
         {/* Switch to signup */}
-        <div className="text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <button
-            type="button"
-            onClick={onSwitchToSignup}
-            className="text-primary hover:underline font-medium"
-          >
-            Sign up
-          </button>
+        <div className="text-center pt-2">
+          <p className="text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <button
+              type="button"
+              onClick={onSwitchToSignup}
+              className="text-cyan-500 hover:text-cyan-400 font-semibold hover:underline transition-colors"
+            >
+              Sign up
+            </button>
+          </p>
         </div>
       </form>
     </AuthLayout>

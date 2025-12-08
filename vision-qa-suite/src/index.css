@@ -1,6 +1,14 @@
+/* Custom font imports for Arabic/English blend */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700&family=Inter:wght@400;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --font-arabic: 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Inter', 'Tajawal', system-ui, -apple-system, sans-serif;
+}
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
@@ -119,10 +127,30 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: var(--font-arabic);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
+    font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+    font-weight: 600;
+  }
+
+  /* Slightly darker default text across pages */
+  p, span, small, label, .text-foreground {
+    color: hsl(var(--foreground) / 0.9);
+  }
+  
+  /* Better font rendering for Arabic text if needed */
+  * {
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -181,5 +209,66 @@ All colors MUST be HSL.
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  /* Enhanced animations for landing page */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 229, 255, 0.1),
+      transparent
+    );
+    background-size: 1000px 100%;
+  }
+
+  /* Smooth gradient animation */
+  @keyframes gradientShift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+  }
+
+  /* Bold styling for system operational text */
+  .text-operational-bold {
+    font-weight: 700 !important;
   }
 }

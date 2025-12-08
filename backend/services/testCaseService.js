@@ -355,26 +355,64 @@ export async function generateTestCasesForFeature(featureId, options = {}) {
       throw new Error("SRS document not processed. Please upload and process SRS first.");
     }
 
-    const featureDescription = `${feature.name}\n\n${feature.description}\n\nAcceptance Criteria: ${feature.acceptanceCriteria?.join(", ") || "N/A"}`;
+    // Build comprehensive feature description
+    const featureDescription = `${feature.name}\n\n${feature.description || ""}\n\nAcceptance Criteria: ${feature.acceptanceCriteria?.join(", ") || "N/A"}\n\nReasoning: ${feature.reasoning || "N/A"}`;
+
+    // Extract feature metadata for test case generation
+    // Handle both Map and plain object formats
+    let featureType = "FUNCTIONAL"; // Default
+    if (feature.metadata) {
+      if (feature.metadata instanceof Map) {
+        featureType = feature.metadata.get('featureType') || featureType;
+      } else if (typeof feature.metadata === 'object') {
+        featureType = feature.metadata.featureType || featureType;
+      }
+    }
+    
+    const matchedSections = feature.matchedSections || [];
+    const featurePriority = feature.priority || "Medium";
+
+    // Prepare enhanced options with feature information
+    const enhancedOptions = {
+      ...options,
+      featureType: featureType,
+      matchedSections: matchedSections,
+      featurePriority: featurePriority,
+      useComprehensiveRetrieval: options.useComprehensiveRetrieval !== false, // Default to true
+    };
+
+    console.log(`Generating test cases for feature: ${feature.name} (Type: ${featureType}, Sections: ${matchedSections.join(", ") || "none"})`);
 
     const generatedTestCases = await generateTestCasesFromRAG(
       project._id.toString(),
       featureDescription,
-      options
+      enhancedOptions
     );
 
     const savedTestCases = [];
     for (const testCaseData of generatedTestCases) {
+      // Set priority based on feature priority if not specified in test case
+      const testCasePriority = testCaseData.priority || 
+                               (featurePriority === "High" ? "high" : 
+                                featurePriority === "Low" ? "low" : "medium");
+
       const testCase = await createTestCase({
         ...testCaseData,
         featureId: feature._id,
         projectId: project._id,
+        priority: testCasePriority,
         isAIGenerated: true,
-        aiGenerationContext: JSON.stringify(options),
+        aiGenerationContext: JSON.stringify({
+          ...enhancedOptions,
+          featureName: feature.name,
+          featureType: featureType,
+          matchedSections: matchedSections,
+        }),
       });
       savedTestCases.push(testCase);
     }
 
+    console.log(`Generated ${savedTestCases.length} test cases for feature: ${feature.name}`);
     return savedTestCases;
   } catch (error) {
     console.error("Error generating test cases for feature:", error);

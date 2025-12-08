@@ -133,34 +133,79 @@ export const verifyEmail = async (req, res) => {
 };
 
 export const Signin = async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(400).json({ success: false, message: "User not found" });
-  }
-  if (!user.isVerified) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Email is not verified" });
-  }
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-  if (!isPasswordValid) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Invalid password" });
-  }
+  try {
+    const { email, password } = req.body;
 
-  const token = jwt.sign(
-    { id: user._id, email: user.email },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-  return res.status(200).json({
-    success: true,
-    message: "Signin successful",
-    token,
-  });
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Email and password are required" 
+      });
+    }
 
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Invalid email or password" 
+      });
+    }
+
+    // Check if email is verified
+    if (!user.isVerified) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Please verify your email before signing in. Check your inbox for the verification link." 
+      });
+    }
+
+    // Validate password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Invalid email or password" 
+      });
+    }
+
+    // Update login stats
+    user.lastLogin = new Date();
+    user.loginCount = (user.loginCount || 0) + 1;
+    await user.save();
+
+    // Generate token
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Return user data and token
+    return res.status(200).json({
+      success: true,
+      message: "Signin successful",
+      token,
+      user: {
+        id: user._id,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerified: user.isVerified,
+        loginCount: user.loginCount,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }
+    });
+  } catch (error) {
+    console.error("Signin error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred during signin. Please try again later.",
+    });
+  }
 };
 
 export const forgetPassword = async (req, res) => {

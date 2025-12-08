@@ -1,4 +1,4 @@
-import { queryRAG, getRAGContext } from "../ai/ragService.js";
+import { queryRAG, getRAGContext, analyzeSectionMatching } from "../ai/ragService.js";
 import { vectorStore } from "../vector/vectorStore.js";
 
 export const queryAI = async (req, res) => {
@@ -98,6 +98,45 @@ export const getVectorInfo = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error getting vector info",
+      error: error.message,
+    });
+  }
+};
+
+export const analyzeSections = async (req, res) => {
+  try {
+    const { projectId, section1Query, section2Query, section1Name, section2Name, nContextChunks, model } = req.body;
+
+    if (!projectId || !section1Query || !section2Query) {
+      return res.status(400).json({
+        success: false,
+        message: "Project ID, section1Query, and section2Query are required",
+      });
+    }
+
+    const options = {
+      nContextChunks: nContextChunks || 15,
+      model: model || "gpt-4o",
+      section1Name: section1Name || "Section 1",
+      section2Name: section2Name || "Section 2",
+    };
+
+    const analysis = await analyzeSectionMatching(
+      projectId,
+      section1Query,
+      section2Query,
+      options
+    );
+
+    res.status(200).json({
+      success: true,
+      data: analysis,
+    });
+  } catch (error) {
+    console.error("Section matching analysis error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error analyzing section matching",
       error: error.message,
     });
   }

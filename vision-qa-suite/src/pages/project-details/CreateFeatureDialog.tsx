@@ -6,17 +6,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
 interface CreateFeatureDialogProps {
   isCreating: boolean;
-  onCreate: (featureData: { name: string; description: string; acceptanceCriteria?: string[] }) => void;
+  onCreate: (featureData: { 
+    name: string; 
+    description: string; 
+    priority?: "High" | "Medium" | "Low";
+    featureType?: "FUNCTIONAL" | "DATA" | "WORKFLOW" | "QUALITY" | "INTERFACE" | "REPORT" | "CONSTRAINT" | "NOTIFICATION";
+    acceptanceCriteria?: string[];
+    matchedSections?: string[];
+    reasoning?: string;
+  }) => void;
 }
 
 const CreateFeatureDialog = ({ isCreating, onCreate }: CreateFeatureDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [newFeature, setNewFeature] = useState({ name: "", description: "", acceptanceCriteria: [] as string[] });
+  const [newFeature, setNewFeature] = useState({ 
+    name: "", 
+    description: "", 
+    priority: "Medium" as "High" | "Medium" | "Low",
+    featureType: undefined as "FUNCTIONAL" | "DATA" | "WORKFLOW" | "QUALITY" | "INTERFACE" | "REPORT" | "CONSTRAINT" | "NOTIFICATION" | undefined,
+    acceptanceCriteria: [] as string[],
+    matchedSections: [] as string[],
+    reasoning: ""
+  });
   const [newCriterion, setNewCriterion] = useState("");
+  const [newSection, setNewSection] = useState("");
 
   const handleAddCriterion = () => {
     if (newCriterion.trim() && !newFeature.acceptanceCriteria.includes(newCriterion.trim())) {
@@ -35,24 +53,63 @@ const CreateFeatureDialog = ({ isCreating, onCreate }: CreateFeatureDialogProps)
     });
   };
 
+  const handleAddSection = () => {
+    if (newSection.trim() && !newFeature.matchedSections.includes(newSection.trim())) {
+      setNewFeature({
+        ...newFeature,
+        matchedSections: [...newFeature.matchedSections, newSection.trim()],
+      });
+      setNewSection("");
+    }
+  };
+
+  const handleRemoveSection = (index: number) => {
+    setNewFeature({
+      ...newFeature,
+      matchedSections: newFeature.matchedSections.filter((_, i) => i !== index),
+    });
+  };
+
   const handleCreate = async () => {
     if (!newFeature.name.trim()) return;
 
     await onCreate({
       name: newFeature.name,
       description: newFeature.description,
-      acceptanceCriteria: newFeature.acceptanceCriteria.length > 0 ? newFeature.acceptanceCriteria : [],
+      priority: newFeature.priority,
+      featureType: newFeature.featureType,
+      acceptanceCriteria: newFeature.acceptanceCriteria.length > 0 ? newFeature.acceptanceCriteria : undefined,
+      matchedSections: newFeature.matchedSections.length > 0 ? newFeature.matchedSections : undefined,
+      reasoning: newFeature.reasoning.trim() || undefined,
     });
-    setNewFeature({ name: "", description: "", acceptanceCriteria: [] });
+    setNewFeature({ 
+      name: "", 
+      description: "", 
+      priority: "Medium",
+      featureType: undefined,
+      acceptanceCriteria: [],
+      matchedSections: [],
+      reasoning: ""
+    });
     setNewCriterion("");
+    setNewSection("");
     setIsOpen(false);
   };
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (!open) {
-      setNewFeature({ name: "", description: "", acceptanceCriteria: [] });
+      setNewFeature({ 
+        name: "", 
+        description: "", 
+        priority: "Medium",
+        featureType: undefined,
+        acceptanceCriteria: [],
+        matchedSections: [],
+        reasoning: ""
+      });
       setNewCriterion("");
+      setNewSection("");
     }
   };
 
@@ -64,7 +121,7 @@ const CreateFeatureDialog = ({ isCreating, onCreate }: CreateFeatureDialogProps)
           Add Feature
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Feature</DialogTitle>
           <DialogDescription>Create a new feature to test</DialogDescription>
@@ -90,6 +147,81 @@ const CreateFeatureDialog = ({ isCreating, onCreate }: CreateFeatureDialogProps)
               disabled={isCreating}
               rows={3}
             />
+          </div>
+
+          {/* Priority and Feature Type */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="feature-priority">Priority</Label>
+              <Select
+                value={newFeature.priority}
+                onValueChange={(value: "High" | "Medium" | "Low") => 
+                  setNewFeature({ ...newFeature, priority: value })
+                }
+                disabled={isCreating}
+              >
+                <SelectTrigger id="feature-priority">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="High">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                      High
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Medium">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                      Medium
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Low">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      Low
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="feature-type">Feature Type (Optional)</Label>
+              <Select
+                value={newFeature.featureType || undefined}
+                onValueChange={(value: string) => {
+                  // If user selects a value, set it; if they want to clear, we'll handle it differently
+                  setNewFeature({ ...newFeature, featureType: value as any });
+                }}
+                disabled={isCreating}
+              >
+                <SelectTrigger id="feature-type">
+                  <SelectValue placeholder="Select type (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FUNCTIONAL">Functional</SelectItem>
+                  <SelectItem value="DATA">Data</SelectItem>
+                  <SelectItem value="WORKFLOW">Workflow</SelectItem>
+                  <SelectItem value="QUALITY">Quality</SelectItem>
+                  <SelectItem value="INTERFACE">Interface</SelectItem>
+                  <SelectItem value="REPORT">Report</SelectItem>
+                  <SelectItem value="CONSTRAINT">Constraint</SelectItem>
+                  <SelectItem value="NOTIFICATION">Notification</SelectItem>
+                </SelectContent>
+              </Select>
+              {newFeature.featureType && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs text-muted-foreground"
+                  onClick={() => setNewFeature({ ...newFeature, featureType: undefined })}
+                  disabled={isCreating}
+                >
+                  Clear selection
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Acceptance Criteria */}
@@ -139,6 +271,71 @@ const CreateFeatureDialog = ({ isCreating, onCreate }: CreateFeatureDialogProps)
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Matched SRS Sections */}
+          <div className="space-y-2">
+            <Label htmlFor="matched-sections">SRS Sections (Optional)</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Add SRS section numbers where this feature is mentioned (e.g., 3.2.1, 4.1)
+            </p>
+            <div className="flex gap-2">
+              <Input
+                id="matched-sections"
+                placeholder="e.g., 3.2.1"
+                value={newSection}
+                onChange={(e) => setNewSection(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddSection();
+                  }
+                }}
+                disabled={isCreating}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddSection}
+                disabled={isCreating || !newSection.trim()}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {newFeature.matchedSections.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {newFeature.matchedSections.map((section, index) => (
+                  <Badge
+                    key={index}
+                    variant="secondary"
+                    className="flex items-center gap-1 px-2 py-1 font-mono"
+                  >
+                    {section}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSection(index)}
+                      className="ml-1 hover:text-destructive"
+                      disabled={isCreating}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Reasoning */}
+          <div className="space-y-2">
+            <Label htmlFor="feature-reasoning">Reasoning (Optional)</Label>
+            <Textarea
+              id="feature-reasoning"
+              placeholder="Explain why this feature is needed or where it comes from..."
+              value={newFeature.reasoning}
+              onChange={(e) => setNewFeature({ ...newFeature, reasoning: e.target.value })}
+              disabled={isCreating}
+              rows={2}
+            />
           </div>
 
           <Button 

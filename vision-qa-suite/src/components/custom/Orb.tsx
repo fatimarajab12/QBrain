@@ -105,9 +105,14 @@ export default function Orb({
       return vec4(colorIn.rgb / (a + 1e-5), a);
     }
     
-    const vec3 baseColor1 = vec3(0.611765, 0.262745, 0.996078);
-    const vec3 baseColor2 = vec3(0.298039, 0.760784, 0.913725);
-    const vec3 baseColor3 = vec3(0.062745, 0.078431, 0.600000);
+    // Softer, more harmonious colors matching design system
+    // Using lighter, more saturated versions for better visual harmony
+    // cyan-400: rgb(34, 211, 238) - lighter cyan for main glow
+    // blue-400: rgb(96, 165, 250) - lighter blue for transitions
+    // indigo-500: rgb(99, 102, 241) - softer indigo for depth
+    const vec3 baseColor1 = vec3(0.133333, 0.827451, 0.933333);  // cyan-400 (lighter, softer)
+    const vec3 baseColor2 = vec3(0.376471, 0.647059, 0.980392);  // blue-400 (lighter, softer)
+    const vec3 baseColor3 = vec3(0.388235, 0.400000, 0.945098);  // indigo-500 (softer)
     const float innerRadius = 0.6;
     const float noiseScale = 0.65;
     
@@ -120,34 +125,40 @@ export default function Orb({
     }
     
     vec4 draw(vec2 uv) {
-      vec3 color1 = adjustHue(baseColor1, hue);
-      vec3 color2 = adjustHue(baseColor2, hue);
-      vec3 color3 = adjustHue(baseColor3, hue);
+      // Minimal hue adjustment for subtle variation
+      vec3 color1 = adjustHue(baseColor1, hue * 0.3);
+      vec3 color2 = adjustHue(baseColor2, hue * 0.2);
+      vec3 color3 = adjustHue(baseColor3, hue * 0.1);
       
       float ang = atan(uv.y, uv.x);
       float len = length(uv);
       float invLen = len > 0.0 ? 1.0 / len : 0.0;
       
-      float n0 = snoise3(vec3(uv * noiseScale, iTime * 0.5)) * 0.5 + 0.5;
+      float n0 = snoise3(vec3(uv * noiseScale, iTime * 0.3)) * 0.5 + 0.5;
       float r0 = mix(mix(innerRadius, 1.0, 0.4), mix(innerRadius, 1.0, 0.6), n0);
       float d0 = distance(uv, (r0 * invLen) * uv);
-      float v0 = light1(1.0, 10.0, d0);
+      float v0 = light1(1.2, 14.0, d0);
       v0 *= smoothstep(r0 * 1.05, r0, len);
-      float cl = cos(ang + iTime * 2.0) * 0.5 + 0.5;
+      float cl = cos(ang + iTime * 1.4) * 0.5 + 0.5;
       
-      float a = iTime * -1.0;
+      float a = iTime * -0.6;
       vec2 pos = vec2(cos(a), sin(a)) * r0;
       float d = distance(uv, pos);
-      float v1 = light2(1.5, 5.0, d);
-      v1 *= light1(1.0, 50.0, d0);
+      float v1 = light2(1.6, 8.0, d);
+      v1 *= light1(1.2, 70.0, d0);
       
       float v2 = smoothstep(1.0, mix(innerRadius, 1.0, n0 * 0.5), len);
       float v3 = smoothstep(innerRadius, mix(innerRadius, 1.0, 0.5), len);
       
-      vec3 col = mix(color1, color2, cl);
-      col = mix(color3, col, v0);
-      col = (col + v1) * v2 * v3;
+      // Softer, more harmonious color mixing
+      vec3 col = mix(color1, color2, cl * 0.6 + 0.4);
+      col = mix(color3, col, v0 * 1.1);
+      col = (col + v1 * 0.7) * v2 * v3;
       col = clamp(col, 0.0, 1.0);
+      
+      // Subtle, harmonious glow
+      float glow = smoothstep(0.85, 0.4, len) * 0.2;
+      col += color1 * glow * 0.3;
       
       return extractAlpha(col);
     }

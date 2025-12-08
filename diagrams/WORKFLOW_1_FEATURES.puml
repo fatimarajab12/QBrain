@@ -1,0 +1,53 @@
+@startuml
+title Activity Diagram - Generate Features from SRS
+
+skinparam defaultFontSize 11
+skinparam activity {
+    BackgroundColor LightSkyBlue
+    BorderColor #0066CC
+}
+
+|User|
+start
+:Click "Generate with AI" button;
+
+|System|
+:Validate project\nCheck SRS is processed;
+
+if (SRS processed?) then (Yes)
+    :Detect SRS type\n(IEEE 830, Agile, etc.);
+    note right: Analyze sample chunks
+    
+    :Get context from SRS\n(Search: "requirements features specifications")\n10 chunks;
+    
+    :Search similar chunks\nfrom Supabase\n(Similarity search);
+    
+    :Build adaptive prompt\n(based on SRS type);
+    
+    :Call OpenAI LLM\n(GPT-4o-mini);
+    note right: Generating features...
+    
+    :Parse JSON response;
+    
+    :Enhance features\n(Classify type, Calculate scores,\nAdd reasoning, Match sections);
+    
+    :Sort features by ranking score;
+    
+    :Save features to MongoDB;
+    
+    :Store feature vectors\nin Supabase;
+    
+    :Return features array;
+    
+    |User|
+    :See progress indicator;
+    :Review generated features;
+    stop
+else (No)
+    :Return error;
+    |User|
+    :See error\n"Please upload SRS first";
+    stop
+endif
+
+@enduml

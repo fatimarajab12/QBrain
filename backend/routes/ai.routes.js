@@ -9,6 +9,7 @@ router.use(authenticate);
 
 router.post("/query", aiController.queryAI);
 router.post("/context", aiController.getContext);
+router.post("/analyze-sections", aiController.analyzeSections);
 router.get("/projects/:projectId/vector-info", aiController.getVectorInfo);
 
 export default router;

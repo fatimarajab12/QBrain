@@ -1,0 +1,55 @@
+@startuml
+title Activity Diagram - Upload & Process SRS Document
+
+skinparam defaultFontSize 11
+skinparam activity {
+    BackgroundColor LightBlue
+    BorderColor #0066CC
+}
+
+|User|
+start
+:Click "Upload SRS" button;
+:Select SRS file\n(PDF or TXT, max 10MB);
+note right: File format validated automatically
+
+|System|
+:Receive file upload request;
+:Validate file\n(Size ≤ 10MB, Type check);
+
+if (File valid?) then (Yes)
+    :Store file in ./uploads directory;
+    
+    if (File type?) then (PDF)
+        :Parse PDF with Document AI\n(OCR + Tables extraction);
+    else (TXT)
+        :Read text file content;
+    endif
+    
+    note right: Text extracted successfully
+    
+    :Split text into chunks\n(2000 chars, 300 overlap);
+    
+    :Generate embeddings\n(OpenAI text-embedding-3-small);
+    note right: Embeddings generated for all chunks
+    
+    :Delete old vectors\nfor this project;
+    
+    :Store vectors in Supabase\n(Vector DB);
+    
+    :Update project metadata in MongoDB\n(srsDocument: processed = true);
+    
+    :Return success response;
+    
+    |User|
+    :See success notification;
+    :SRS status updated\non project page;
+    stop
+else (No)
+    :Return error response;
+    |User|
+    :See error notification\n(Invalid file type or size);
+    stop
+endif
+
+@enduml

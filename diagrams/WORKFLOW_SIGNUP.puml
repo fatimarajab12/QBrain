@@ -1,0 +1,52 @@
+@startuml
+title Activity Diagram - User Signup (Create Account)
+
+skinparam defaultFontSize 11
+skinparam activity {
+    BackgroundColor AliceBlue
+    BorderColor #0066CC
+}
+
+|User|
+start
+:Fill signup form\n(Name, Email, Password);
+:Click "Create Account" button;
+
+|System|
+:Validate inputs;
+
+if (Validation passed?) then (Yes)
+    :Check if email exists;
+    
+    if (Email exists?) then (No)
+        :Create new user\n(Hash password);
+        
+        :Generate verification token;
+        
+        :Save user to MongoDB;
+        
+        :Send verification email;
+        note right: Verification link sent
+        
+        :Generate JWT token;
+        
+        :Return success response;
+        
+        |User|
+        :See success notification;
+        :Redirected to Dashboard;
+        stop
+    else (Yes)
+        :Return error\n"User already exists";
+        |User|
+        :See error notification;
+        stop
+    endif
+else (No)
+    :Return error;
+    |User|
+    :See error notification;
+    stop
+endif
+
+@enduml

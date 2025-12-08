@@ -3,30 +3,74 @@ import { User } from '@/types/auth';
 
 export const authStorage = {
   getToken(): string | null {
-    return localStorage.getItem("authToken");
+    try {
+      return localStorage.getItem("authToken");
+    } catch (error) {
+      console.error("Error getting token:", error);
+      return null;
+    }
   },
 
   setToken(token: string): void {
-    localStorage.setItem("authToken", token);
+    try {
+      localStorage.setItem("authToken", token);
+    } catch (error) {
+      console.error("Error setting token:", error);
+    }
   },
 
   getUser(): User | null {
-    const userStr = localStorage.getItem("user");
-    return userStr ? JSON.parse(userStr) : null;
+    try {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) return null;
+      return JSON.parse(userStr) as User;
+    } catch (error) {
+      console.error("Error getting user:", error);
+      return null;
+    }
   },
 
   setUser(user: User): void {
-    localStorage.setItem("user", JSON.stringify(user));
+    try {
+      localStorage.setItem("user", JSON.stringify(user));
+      if (user.id) {
+        localStorage.setItem("userId", user.id);
+      }
+    } catch (error) {
+      console.error("Error setting user:", error);
+    }
   },
 
   clear(): void {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
-    localStorage.removeItem("userId");
+    try {
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      localStorage.removeItem("userId");
+    } catch (error) {
+      console.error("Error clearing auth storage:", error);
+    }
   },
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    if (!token) return false;
+    
+    // Check if token is expired (basic check)
+    try {
+      const tokenParts = token.split('.');
+      if (tokenParts.length === 3) {
+        const payload = JSON.parse(atob(tokenParts[1]));
+        const exp = payload.exp * 1000; // Convert to milliseconds
+        if (Date.now() >= exp) {
+          this.clear();
+          return false;
+        }
+      }
+    } catch (error) {
+      console.warn("Error checking token expiration:", error);
+    }
+    
+    return true;
   }
 };
 

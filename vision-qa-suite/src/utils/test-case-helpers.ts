@@ -35,14 +35,14 @@ export const calculateTestStats = (testCases: TestCase[]) => {
 
 // New test case template
 export const newTestCaseTemplate: Omit<TestCase, 'id'> = {
- title: "",
+  title: "",
   priority: "medium",
   status: "pending",
-  preconditions: "",
+  preconditions: [], // Array of strings (matching backend)
   steps: [],
   expectedResult: "",
   actualResult: "",
   bugReports: [],
-  featureId: undefined, 
+  featureId: "", 
   projectId: undefined
 };

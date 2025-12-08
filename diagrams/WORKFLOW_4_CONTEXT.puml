@@ -1,0 +1,37 @@
+@startuml
+title Activity Diagram - Get Context (Retrieve Relevant Chunks)
+
+skinparam defaultFontSize 11
+skinparam activity {
+    BackgroundColor SkyBlue
+    BorderColor #0066CC
+}
+
+|User|
+start
+:Request context retrieval\n(Query text + Project ID\n+ Number of results);
+
+|System|
+:Receive context request;
+:Expand query\n(Add related terms);
+note right: Query expansion
+
+:Generate query embedding\n(OpenAI text-embedding-3-small);
+
+:Search in Supabase\n(Cosine similarity search);
+note right: Finding similar chunks
+
+:Get top k chunks\n(sorted by relevance score);
+
+:Calculate relevance\n(relevance = 1 - similarity score);
+
+:Transform results\n(Add metadata);
+
+:Return context chunks\nwith relevance scores;
+
+|User|
+:Receive context chunks\n(Array of relevant text chunks);
+:Use chunks for analysis\nor display;
+stop
+
+@enduml

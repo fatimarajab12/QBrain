@@ -23,9 +23,9 @@ import { getPriorityColor, getStatusColor } from "@/utils/test-case-helpers";
 interface TestCaseCardProps {
   testCase: TestCase;
   onEdit: (testCase: TestCase) => void;
-  onDelete: (testCaseId: number) => void;
-  onStatusUpdate: (testCaseId: number, status: "passed" | "failed") => void;
-  onPriorityUpdate?: (testCaseId: number, priority: "high" | "medium" | "low") => void;
+  onDelete: (testCaseId: string) => void;
+  onStatusUpdate: (testCaseId: string, status: "passed" | "failed") => void;
+  onPriorityUpdate?: (testCaseId: string, priority: "high" | "medium" | "low") => void;
   isDeleting?: boolean;
 }
 
@@ -146,7 +146,15 @@ const TestCaseCard = ({ testCase, onEdit, onDelete, onStatusUpdate, onPriorityUp
           <TabsContent value="details" className="space-y-4 mt-4">
             <div>
               <h4 className="font-semibold text-sm mb-2">Preconditions</h4>
-              <p className="text-sm text-muted-foreground">{testCase.preconditions || "No preconditions specified"}</p>
+              {testCase.preconditions && testCase.preconditions.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1">
+                  {testCase.preconditions.map((precondition, index) => (
+                    <li key={index} className="text-sm text-muted-foreground">{precondition}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No preconditions specified</p>
+              )}
             </div>
             <div>
               <h4 className="font-semibold text-sm mb-2">Steps</h4>

@@ -19,6 +19,7 @@ const CreateTestCaseDialog = ({ isCreating, onCreate }: CreateTestCaseDialogProp
   const [isOpen, setIsOpen] = useState(false);
   const [newTestCase, setNewTestCase] = useState<Omit<TestCase, 'id'>>(newTestCaseTemplate);
   const [newStep, setNewStep] = useState("");
+  const [newPrecondition, setNewPrecondition] = useState("");
 
   const handleAddStep = (step: string) => {
     if (!step.trim()) return;
@@ -36,12 +37,29 @@ const CreateTestCaseDialog = ({ isCreating, onCreate }: CreateTestCaseDialogProp
     }));
   };
 
+  const handleAddPrecondition = (precondition: string) => {
+    if (!precondition.trim()) return;
+    setNewTestCase(prev => ({
+      ...prev,
+      preconditions: [...prev.preconditions, precondition]
+    }));
+    setNewPrecondition("");
+  };
+
+  const handleRemovePrecondition = (preconditionIndex: number) => {
+    setNewTestCase(prev => ({
+      ...prev,
+      preconditions: prev.preconditions.filter((_, index) => index !== preconditionIndex)
+    }));
+  };
+
   const handleCreate = async () => {
     if (!newTestCase.title.trim()) return;
 
     await onCreate(newTestCase);
     setNewTestCase(newTestCaseTemplate);
     setNewStep("");
+    setNewPrecondition("");
     setIsOpen(false);
   };
 
@@ -137,15 +155,47 @@ const CreateTestCaseDialog = ({ isCreating, onCreate }: CreateTestCaseDialogProp
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="preconditions">Preconditions</Label>
-            <Textarea
-              id="preconditions"
-              placeholder="Enter any preconditions for this test"
-              value={newTestCase.preconditions}
-              onChange={(e) => setNewTestCase(prev => ({ ...prev, preconditions: e.target.value }))}
-              rows={2}
-              disabled={isCreating}
-            />
+            <Label>Preconditions</Label>
+            <div className="space-y-2">
+              {newTestCase.preconditions.map((precondition, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground w-6">{index + 1}.</span>
+                  <Input value={precondition} readOnly className="flex-1" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemovePrecondition(index)}
+                    disabled={isCreating}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter a precondition"
+                  value={newPrecondition}
+                  onChange={(e) => setNewPrecondition(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddPrecondition(newPrecondition);
+                    }
+                  }}
+                  disabled={isCreating}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddPrecondition(newPrecondition)}
+                  disabled={isCreating || !newPrecondition.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

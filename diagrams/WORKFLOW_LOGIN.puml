@@ -1,0 +1,59 @@
+@startuml
+title Activity Diagram - User Login (Sign In)
+
+skinparam defaultFontSize 11
+skinparam activity {
+    BackgroundColor LightBlue
+    BorderColor #0066CC
+}
+
+|User|
+start
+:Enter email and password;
+:Click "Sign In";
+
+|System|
+:Validate inputs;
+
+if (Valid?) then (Yes)
+    :Find user by email;
+    
+    if (User exists?) then (Yes)
+        :Check email verified;
+        
+        if (Verified?) then (Yes)
+            :Compare password;
+            
+            if (Password correct?) then (Yes)
+                :Generate JWT token;
+                :Return success;
+                
+                |User|
+                :Redirected to Dashboard;
+                stop
+            else (No)
+                :Return error;
+                |User|
+                :See error;
+                stop
+            endif
+        else (No)
+            :Return error;
+            |User|
+            :See error;
+            stop
+        endif
+    else (No)
+        :Return error;
+        |User|
+        :See error;
+        stop
+    endif
+else (No)
+    :Return error;
+    |User|
+    :See error;
+    stop
+endif
+
+@enduml

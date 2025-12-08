@@ -60,6 +60,34 @@ const featureSchema = new mongoose.Schema(
       of: mongoose.Schema.Types.Mixed,
       default: {},
     },
+    coverageEvaluation: {
+      coverageScore: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: null,
+      },
+      srsSectionsCovered: {
+        type: [String],
+        default: [],
+      },
+      srsSectionsMissing: {
+        type: [String],
+        default: [],
+      },
+      coverageAnalysis: {
+        type: String,
+        default: null,
+      },
+      recommendations: {
+        type: [String],
+        default: [],
+      },
+      evaluatedAt: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,

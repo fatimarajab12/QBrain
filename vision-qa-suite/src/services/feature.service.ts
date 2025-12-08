@@ -21,6 +21,20 @@ function transformFeature(backendFeature: any): Feature {
     'blocked': 0,
   };
 
+  // Extract featureType from metadata
+  let featureType: Feature['featureType'] = undefined;
+  if (backendFeature.metadata) {
+    if (backendFeature.metadata instanceof Map) {
+      featureType = backendFeature.metadata.get('featureType') as Feature['featureType'];
+    } else if (typeof backendFeature.metadata === 'object') {
+      featureType = backendFeature.metadata.featureType as Feature['featureType'];
+    }
+  }
+  // Fallback: check if featureType is directly on the object
+  if (!featureType && backendFeature.featureType) {
+    featureType = backendFeature.featureType as Feature['featureType'];
+  }
+
   return {
     id: backendFeature._id || backendFeature.id,
     _id: backendFeature._id,
@@ -43,6 +57,10 @@ function transformFeature(backendFeature: any): Feature {
     confidence: backendFeature.confidence || undefined,
     relevanceScore: backendFeature.relevanceScore || undefined,
     rankingScore: backendFeature.rankingScore || undefined,
+    featureType: featureType,
+    metadata: backendFeature.metadata ? (typeof backendFeature.metadata === 'object' && !(backendFeature.metadata instanceof Map) 
+      ? backendFeature.metadata 
+      : Object.fromEntries(backendFeature.metadata instanceof Map ? backendFeature.metadata : [])) : undefined,
   };
 }
 
@@ -106,7 +124,15 @@ export const featureService = {
   },
 
   // Create a new feature
-  async createFeature(projectId: string, featureData: { name: string; description: string; priority?: string; acceptanceCriteria?: string[] }): Promise<Feature> {
+  async createFeature(projectId: string, featureData: { 
+    name: string; 
+    description: string; 
+    priority?: string; 
+    featureType?: string;
+    acceptanceCriteria?: string[];
+    matchedSections?: string[];
+    reasoning?: string;
+  }): Promise<Feature> {
     try {
       const response = await fetch(`${API_BASE_URL}/features`, {
         method: 'POST',

@@ -1,4 +1,5 @@
 import { OpenAIEmbeddings } from "@langchain/openai";
+import { cleanText, normalizeVector } from "../utils/textProcessing.js";
 
 let embeddingsInstance = null;
 
@@ -16,16 +17,23 @@ function getEmbeddingsInstance(model = DEFAULT_EMBEDDING_MODEL) {
   return embeddingsInstance;
 }
 
-export async function generateEmbedding(text, model = DEFAULT_EMBEDDING_MODEL) {
+
+export async function generateEmbedding(text, model = DEFAULT_EMBEDDING_MODEL, normalize = true) {
   if (!text || typeof text !== "string" || text.trim().length === 0)
     throw new Error("Text must be a non-empty string");
+
+  // Clean and normalize text before embedding
+  const cleanedText = cleanText(text);
+  if (!cleanedText) throw new Error("Text is empty after cleaning");
 
   const embeddings = getEmbeddingsInstance(model);
 
   let attempts = 0;
   while (attempts < 3) {
     try {
-      return await embeddings.embedQuery(text.trim());
+      const embedding = await embeddings.embedQuery(cleanedText);
+      // Normalize vector for better cosine similarity
+      return normalize ? normalizeVector(embedding) : embedding;
     } catch (error) {
       attempts++;
       console.warn(`Embedding attempt ${attempts} failed: ${error.message}`);
@@ -35,19 +43,26 @@ export async function generateEmbedding(text, model = DEFAULT_EMBEDDING_MODEL) {
   }
 }
 
-export async function generateEmbeddingsBatch(texts, model = DEFAULT_EMBEDDING_MODEL) {
+
+export async function generateEmbeddingsBatch(texts, model = DEFAULT_EMBEDDING_MODEL, normalize = true) {
   if (!Array.isArray(texts) || texts.length === 0)
     throw new Error("Texts must be a non-empty array");
 
-  const validTexts = texts.filter(t => t && typeof t === "string" && t.trim().length > 0);
-  if (!validTexts.length) throw new Error("No valid texts to embed");
+  // Clean all texts before embedding
+  const cleanedTexts = texts
+    .map(text => text && typeof text === "string" ? cleanText(text) : null)
+    .filter(text => text && text.length > 0);
+  
+  if (!cleanedTexts.length) throw new Error("No valid texts to embed after cleaning");
 
   const embeddings = getEmbeddingsInstance(model);
 
   let attempts = 0;
   while (attempts < 3) {
     try {
-      return await embeddings.embedDocuments(validTexts);
+      const embeddingVectors = await embeddings.embedDocuments(cleanedTexts);
+      // Normalize all vectors for better cosine similarity
+      return normalize ? embeddingVectors.map(v => normalizeVector(v)) : embeddingVectors;
     } catch (error) {
       attempts++;
       console.warn(`Batch embedding attempt ${attempts} failed: ${error.message}`);

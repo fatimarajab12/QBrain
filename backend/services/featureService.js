@@ -16,11 +16,52 @@ function validateObjectId(id, fieldName = "ID") {
   throw new Error(`Invalid ${fieldName}: Must be a valid MongoDB ObjectId (24 hex characters)`);
 }
 
+/**
+ * Normalizes priority values to match the Feature model enum
+ * Converts "Critical" to "High" and ensures valid enum values
+ */
+function normalizePriority(priority) {
+  if (!priority) return "Medium";
+  
+  const normalized = priority.trim();
+  
+  // Map Critical to High
+  if (normalized === "Critical" || normalized === "critical" || normalized === "CRITICAL") {
+    return "High";
+  }
+  
+  // Ensure it's a valid enum value
+  const validPriorities = ["High", "Medium", "Low"];
+  if (validPriorities.includes(normalized)) {
+    return normalized;
+  }
+  
+  // Default to Medium if invalid
+  console.warn(`Invalid priority value "${priority}", defaulting to "Medium"`);
+  return "Medium";
+}
+
 export async function createFeature(featureData) {
   try {
+    // If featureType is provided, add it to metadata
+    const { featureType, ...restFeatureData } = featureData;
+    
+    // Normalize priority before creating feature
+    if (restFeatureData.priority) {
+      restFeatureData.priority = normalizePriority(restFeatureData.priority);
+    }
+    
     const feature = new Feature({
-      ...featureData,
+      ...restFeatureData,
     });
+
+    // Add featureType to metadata if provided
+    if (featureType) {
+      if (!feature.metadata) {
+        feature.metadata = new Map();
+      }
+      feature.metadata.set('featureType', featureType);
+    }
 
     await feature.save();
 
@@ -135,6 +176,11 @@ export async function updateFeature(featureId, updateData) {
       }
     }
 
+    // Normalize priority if provided
+    if (updateData.priority) {
+      updateData.priority = normalizePriority(updateData.priority);
+    }
+
     const feature = await Feature.findByIdAndUpdate(
       id,
       { $set: updateData },
@@ -235,7 +281,12 @@ export async function generateFeaturesFromSRS(projectId, options = {}) {
       throw new Error("SRS document not processed. Please upload and process SRS first.");
     }
 
-    const generatedFeatures = await generateFeaturesFromRAG(project._id.toString(), options);
+    const generatedFeaturesResult = await generateFeaturesFromRAG(project._id.toString(), options);
+    
+    // Handle both array (backward compatibility) and object (comprehensive retrieval) formats
+    const generatedFeatures = Array.isArray(generatedFeaturesResult) 
+      ? generatedFeaturesResult 
+      : generatedFeaturesResult.features || [];
 
     const savedFeatures = [];
     for (const featureData of generatedFeatures) {
@@ -250,8 +301,14 @@ export async function generateFeaturesFromSRS(projectId, options = {}) {
         ...featureFields
       } = featureData;
 
-      const feature = await createFeature({
+      // Normalize priority before creating feature
+      const normalizedFeatureFields = {
         ...featureFields,
+        priority: featureFields.priority ? normalizePriority(featureFields.priority) : "Medium",
+      };
+      
+      const feature = await createFeature({
+        ...normalizedFeatureFields,
         projectId: id,
         isAIGenerated: true,
         aiGenerationContext: JSON.stringify({
@@ -323,10 +380,27 @@ export async function bulkCreateFeatures(projectId, featuresData) {
               continue;
             }
 
+            // Extract featureType and add to metadata if provided
+            const { featureType, ...restFeatureData } = featureData;
+            
+            // Normalize priority before creating feature
+            if (restFeatureData.priority) {
+              restFeatureData.priority = normalizePriority(restFeatureData.priority);
+            }
+            
             const feature = new Feature({
-              ...featureData,
+              ...restFeatureData,
               projectId: id,
             });
+
+            // Add featureType to metadata if provided
+            if (featureType) {
+              if (!feature.metadata) {
+                feature.metadata = new Map();
+              }
+              feature.metadata.set('featureType', featureType);
+            }
+
             await feature.save({ session });
             features.push(feature);
           } catch (saveError) {

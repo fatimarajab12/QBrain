@@ -26,26 +26,37 @@ export const useAuth = () => {
     setError(null);
 
     try {
+      // Validate input
+      if (!credentials.email || !credentials.password) {
+        throw new Error("Please fill in all fields");
+      }
+
       const response = await authService.login(credentials);
       
+      // Store authentication data
       authStorage.setToken(response.token);
       authStorage.setUser(response.user);
       setUser(response.user);
 
       toast({
         title: "Login Successful",
-        description: "Welcome back to QBrain!",
+        description: `Welcome back, ${response.user.name || response.user.email}!`,
       });
 
+      // Navigate to dashboard
       navigate("/dashboard");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed. Please try again.";
       setError(errorMessage);
-      toast({
-        title: "Login Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      
+      // Show toast only for non-validation errors
+      if (!errorMessage.includes("Please fill")) {
+        toast({
+          title: "Login Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

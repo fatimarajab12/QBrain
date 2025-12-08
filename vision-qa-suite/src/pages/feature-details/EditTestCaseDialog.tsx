@@ -1,6 +1,6 @@
 // pages/feature-details/components/EditTestCaseDialog.tsx
 import { useState } from "react";
-import { Save, X, Loader2, Trash2 } from "lucide-react";
+import { Save, X, Loader2, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ interface EditTestCaseDialogProps {
 const EditTestCaseDialog = ({ testCase, isUpdating, onUpdate, onClose }: EditTestCaseDialogProps) => {
   const [editingTestCase, setEditingTestCase] = useState<TestCase | null>(testCase);
   const [newStep, setNewStep] = useState("");
+  const [newPrecondition, setNewPrecondition] = useState("");
 
   const handleAddStep = (step: string) => {
     if (!step.trim() || !editingTestCase) return;
@@ -123,14 +124,64 @@ const EditTestCaseDialog = ({ testCase, isUpdating, onUpdate, onClose }: EditTes
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-preconditions">Preconditions</Label>
-            <Textarea
-              id="edit-preconditions"
-              value={editingTestCase.preconditions}
-              onChange={(e) => setEditingTestCase(prev => prev ? { ...prev, preconditions: e.target.value } : null)}
-              rows={2}
-              disabled={isUpdating}
-            />
+            <Label>Preconditions</Label>
+            <div className="space-y-2">
+              {editingTestCase.preconditions.map((precondition, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground w-6">{index + 1}.</span>
+                  <Input value={precondition} readOnly className="flex-1" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingTestCase(prev => prev ? {
+                      ...prev,
+                      preconditions: prev.preconditions.filter((_, i) => i !== index)
+                    } : null)}
+                    disabled={isUpdating}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter a precondition"
+                  value={newPrecondition}
+                  onChange={(e) => setNewPrecondition(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (newPrecondition.trim()) {
+                        setEditingTestCase(prev => prev ? {
+                          ...prev,
+                          preconditions: [...prev.preconditions, newPrecondition]
+                        } : null);
+                        setNewPrecondition("");
+                      }
+                    }
+                  }}
+                  disabled={isUpdating}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (newPrecondition.trim()) {
+                      setEditingTestCase(prev => prev ? {
+                        ...prev,
+                        preconditions: [...prev.preconditions, newPrecondition]
+                      } : null);
+                      setNewPrecondition("");
+                    }
+                  }}
+                  disabled={isUpdating || !newPrecondition.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

@@ -23,7 +23,6 @@ export const authService = {
   // Login user
   async login(credentials: LoginForm): Promise<AuthResponse> {
     const url = `${API_BASE_URL}/auth/sign-in`;
-    console.log('Login attempt to:', url);
     
     try {
       const response = await fetch(url, {
@@ -32,61 +31,33 @@ export const authService = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(credentials),
-        credentials: 'include', // Include credentials for CORS
-        mode: 'cors', // Explicitly set CORS mode
+        credentials: 'include',
+        mode: 'cors',
       });
 
-      console.log('Response status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        let errorMessage = 'Login failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          // If response is not JSON, use status text
-          errorMessage = response.statusText || errorMessage;
+      // Handle non-JSON responses
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
         }
-        throw new Error(errorMessage);
+        throw new Error('Invalid response format from server');
       }
 
       const result = await response.json();
-      console.log('Response data:', result);
-      
-      if (result.success && result.token) {
-        // Store token
-        localStorage.setItem('authToken', result.token);
-        
-        // Decode JWT to get user ID and email
-        let userId = '';
-        let userEmail = credentials.email;
-        
-        try {
-          const tokenParts = result.token.split('.');
-          if (tokenParts.length === 3) {
-            const payload = JSON.parse(atob(tokenParts[1]));
-            if (payload.id) {
-              userId = payload.id;
-              localStorage.setItem('userId', payload.id);
-            }
-            if (payload.email) {
-              userEmail = payload.email;
-            }
-          }
-        } catch (e) {
-          console.warn('Could not decode token:', e);
-        }
-        
-        // Create user object from token data
-        // Backend doesn't return full user data in signin, so we use token payload
-        const user: User = {
-          id: userId,
-          email: userEmail,
-          name: '', // Will be fetched or updated later if needed
-          isVerified: true, // If login succeeded, user is verified
-        };
 
-        // Store user data
+      if (!response.ok) {
+        const errorMessage = result.message || `Login failed: ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
+      
+      if (result.success && result.token && result.user) {
+        // Transform and store user data
+        const user = transformUser(result.user);
+        
+        // Store token and user data
+        localStorage.setItem('authToken', result.token);
+        localStorage.setItem('userId', user.id);
         localStorage.setItem('user', JSON.stringify(user));
 
         return {
@@ -95,11 +66,11 @@ export const authService = {
         };
       }
       
-      throw new Error('Invalid response from server');
+      throw new Error(result.message || 'Invalid response from server');
     } catch (error: any) {
-      console.error('Error logging in:', error);
+      console.error('Login error:', error);
       
-      // Handle network errors - check multiple possible error formats
+      // Handle network errors
       const errorMessage = error?.message || '';
       const errorName = error?.name || '';
       
@@ -108,12 +79,12 @@ export const authService = {
         errorMessage.includes('NetworkError') ||
         errorMessage.includes('Network request failed') ||
         errorName === 'TypeError' ||
-        errorName === 'NetworkError' ||
-        !error.response
+        errorName === 'NetworkError'
       ) {
-        throw new Error('Cannot connect to server. Please check: 1. Backend is running on http://localhost:5000 2. CORS is configured correctly 3. No firewall blocking the connection');
+        throw new Error('Cannot connect to server. Please ensure: 1. Backend is running on http://localhost:5000 2. CORS is configured correctly 3. No firewall is blocking the connection');
       }
       
+      // Re-throw with original message
       throw error;
     }
   },

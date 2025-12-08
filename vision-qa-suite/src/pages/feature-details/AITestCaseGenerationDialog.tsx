@@ -15,6 +15,8 @@ import { TestCase } from "@/types/test-case";
 interface AITestCaseGenerationDialogProps {
   featureId: string;
   featureName?: string;
+  featureType?: "FUNCTIONAL" | "DATA" | "WORKFLOW" | "QUALITY" | "INTERFACE" | "REPORT" | "CONSTRAINT" | "NOTIFICATION";
+  matchedSections?: string[];
   onApprove: (approvedTestCases: TestCase[]) => void;
   isGenerating: boolean;
 }
@@ -22,13 +24,15 @@ interface AITestCaseGenerationDialogProps {
 const AITestCaseGenerationDialog = ({ 
   featureId, 
   featureName,
+  featureType,
+  matchedSections,
   onApprove, 
   isGenerating: isGeneratingFromParent 
 }: AITestCaseGenerationDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isGeneratingTestCases, setIsGeneratingTestCases] = useState(false);
   const [generatedTestCases, setGeneratedTestCases] = useState<TestCase[]>([]);
-  const [selectedTestCases, setSelectedTestCases] = useState<Set<number>>(new Set());
+  const [selectedTestCases, setSelectedTestCases] = useState<Set<string>>(new Set());
   const [isApproving, setIsApproving] = useState(false);
   const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
   const [hasAIGeneratedTestCases, setHasAIGeneratedTestCases] = useState(false);
@@ -95,7 +99,12 @@ const AITestCaseGenerationDialog = ({
         description: "AI is generating test cases from feature description...",
       });
 
-      const testCases = await testCaseService.generateAITestCases(featureId);
+      // Pass feature information to improve test case generation
+      const testCases = await testCaseService.generateAITestCases(featureId, {
+        featureType: featureType,
+        matchedSections: matchedSections || [],
+        useComprehensiveRetrieval: true,
+      });
       
       if (generationIdRef.current !== currentGenerationId) {
         return;
@@ -147,7 +156,7 @@ const AITestCaseGenerationDialog = ({
     return Array.from(seen.values());
   };
 
-  const handleToggleTestCase = (testCaseId: number) => {
+  const handleToggleTestCase = (testCaseId: string) => {
     setSelectedTestCases(prev => {
       const newSet = new Set(prev);
       if (newSet.has(testCaseId)) {
@@ -259,6 +268,11 @@ const AITestCaseGenerationDialog = ({
             Generate test cases automatically from feature description and SRS document
             {featureName && (
               <span className="block mt-1 text-sm font-medium">Feature: {featureName}</span>
+            )}
+            {featureType && (
+              <span className="block mt-1 text-xs text-muted-foreground">
+                Feature Type: {featureType} {matchedSections && matchedSections.length > 0 && `• SRS Sections: ${matchedSections.join(", ")}`}
+              </span>
             )}
           </DialogDescription>
         </DialogHeader>

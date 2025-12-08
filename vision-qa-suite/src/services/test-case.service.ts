@@ -20,25 +20,60 @@ function getId(id: any): number {
 
 // Helper function to transform backend test case to frontend format
 function transformTestCase(backendTestCase: any): TestCase {
+  // Handle preconditions - convert to array if it's a string or already an array
+  let preconditions: string[] = [];
+  if (Array.isArray(backendTestCase.preconditions)) {
+    preconditions = backendTestCase.preconditions.map((p: any) => String(p));
+  } else if (backendTestCase.preconditions) {
+    // If it's a string, convert to array (for backward compatibility)
+    preconditions = [String(backendTestCase.preconditions)];
+  }
+
+  // Handle testData - convert Map to object if needed
+  let testData: Record<string, any> = {};
+  if (backendTestCase.testData) {
+    if (backendTestCase.testData instanceof Map) {
+      testData = Object.fromEntries(backendTestCase.testData);
+    } else if (typeof backendTestCase.testData === 'object') {
+      testData = backendTestCase.testData;
+    }
+  }
+
+  // Handle metadata - convert Map to object if needed
+  let metadata: Record<string, any> = {};
+  if (backendTestCase.metadata) {
+    if (backendTestCase.metadata instanceof Map) {
+      metadata = Object.fromEntries(backendTestCase.metadata);
+    } else if (typeof backendTestCase.metadata === 'object') {
+      metadata = backendTestCase.metadata;
+    }
+  }
+
   return {
-    id: getId(backendTestCase._id || backendTestCase.id),
+    id: String(backendTestCase._id || backendTestCase.id || ''),
+    _id: backendTestCase._id,
     title: backendTestCase.title || '',
     description: backendTestCase.description || undefined,
     priority: (backendTestCase.priority?.toLowerCase() || 'medium') as "high" | "medium" | "low",
     status: (backendTestCase.status?.toLowerCase() || 'pending') as "passed" | "failed" | "pending" | "in_progress" | "blocked",
-    preconditions: backendTestCase.preconditions || '',
-    steps: Array.isArray(backendTestCase.steps) ? backendTestCase.steps : [],
+    preconditions: preconditions,
+    steps: Array.isArray(backendTestCase.steps) ? backendTestCase.steps.map((s: any) => String(s)) : [],
     expectedResult: backendTestCase.expectedResult || '',
-    actualResult: backendTestCase.actualResult || '',
-    bugReports: Array.isArray(backendTestCase.bugReports) ? backendTestCase.bugReports : [],
+    actualResult: backendTestCase.actualResult || undefined,
+    bugReports: Array.isArray(backendTestCase.bugReports) 
+      ? backendTestCase.bugReports.map((id: any) => String(id))
+      : [],
     featureId: typeof backendTestCase.featureId === 'object' 
-      ? getId(backendTestCase.featureId._id || backendTestCase.featureId)
-      : getId(backendTestCase.featureId || '0'),
+      ? String(backendTestCase.featureId._id || backendTestCase.featureId || '')
+      : String(backendTestCase.featureId || ''),
     projectId: typeof backendTestCase.projectId === 'object'
-      ? getId(backendTestCase.projectId._id || backendTestCase.projectId)
-      : backendTestCase.projectId ? getId(backendTestCase.projectId) : undefined,
+      ? String(backendTestCase.projectId._id || backendTestCase.projectId || '')
+      : backendTestCase.projectId ? String(backendTestCase.projectId) : undefined,
     createdAt: backendTestCase.createdAt,
     updatedAt: backendTestCase.updatedAt,
+    isAIGenerated: backendTestCase.isAIGenerated || false,
+    testData: testData,
+    metadata: metadata,
   };
 }
 
@@ -109,7 +144,7 @@ export const testCaseService = {
     }
   },
 
-  async updateTestCase(testCaseId: number, testCaseData: Partial<TestCase>): Promise<TestCase> {
+  async updateTestCase(testCaseId: string, testCaseData: Partial<TestCase>): Promise<TestCase> {
     try {
       const response = await fetch(`${API_BASE_URL}/test-cases/${testCaseId}`, {
         method: 'PUT',
@@ -138,7 +173,7 @@ export const testCaseService = {
     }
   },
 
-  async deleteTestCase(testCaseId: number): Promise<void> {
+  async deleteTestCase(testCaseId: string): Promise<void> {
     try {
       const response = await fetch(`${API_BASE_URL}/test-cases/${testCaseId}`, {
         method: 'DELETE',
@@ -157,7 +192,7 @@ export const testCaseService = {
     }
   },
 
-  async updateTestCaseStatus(testCaseId: number, status: "passed" | "failed"): Promise<TestCase> {
+  async updateTestCaseStatus(testCaseId: string, status: "passed" | "failed"): Promise<TestCase> {
     try {
       const response = await fetch(`${API_BASE_URL}/test-cases/${testCaseId}`, {
         method: 'PUT',
@@ -194,13 +229,22 @@ export const testCaseService = {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
     
     try {
+      // If feature information is provided in options, use it
+      const requestOptions = {
+        ...(options || {}),
+        // Ensure featureType and matchedSections are passed if available
+        featureType: options?.featureType,
+        matchedSections: options?.matchedSections,
+        useComprehensiveRetrieval: options?.useComprehensiveRetrieval !== false, // Default to true
+      };
+
       const response = await fetch(`${API_BASE_URL}/test-cases/features/${featureId}/generate-test-cases`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
         },
-        body: JSON.stringify({ options: options || {} }),
+        body: JSON.stringify({ options: requestOptions }),
       });
 
       if (!response.ok) {

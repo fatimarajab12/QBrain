@@ -18,4 +18,9 @@ export interface Feature {
   confidence?: number;
   relevanceScore?: number;
   rankingScore?: number;
+  featureType?: "FUNCTIONAL" | "DATA" | "WORKFLOW" | "QUALITY" | "INTERFACE" | "REPORT" | "CONSTRAINT" | "NOTIFICATION";
+  metadata?: {
+    featureType?: string;
+    [key: string]: any;
+  };
 }

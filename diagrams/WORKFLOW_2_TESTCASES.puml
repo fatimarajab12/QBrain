@@ -1,0 +1,55 @@
+@startuml
+title Activity Diagram - Generate Test Cases for Feature
+
+skinparam defaultFontSize 11
+skinparam activity {
+    BackgroundColor LightSteelBlue
+    BorderColor #0066CC
+}
+
+|User|
+start
+:Click "Generate with AI" button\n(Feature ID);
+
+|System|
+:Receive test case generation request;
+:Get feature data from MongoDB\n(name, description, type,\nmatchedSections, reasoning);
+
+if (Feature has matchedSections?) then (Yes)
+    :Get context from matchedSections\n(3 chunks per section);
+    note right: Using feature's matched sections
+endif
+
+:Get general context\n(1 query based on feature);
+
+:Remove duplicate chunks;
+:Combine all contexts;
+
+:Build prompt\n(based on feature type);
+note right: Prompt adapted to feature type\n(FUNCTIONAL, DATA, etc.)
+
+:Invoke OpenAI LLM\n(GPT-4o-mini, JSON mode);
+note right: LLM processing...
+
+:Receive JSON test cases response;
+
+:Parse JSON\n(Retry up to 3 times if needed);
+
+:Validate test cases\n(Check required fields);
+
+:Enhance test cases\n(Set defaults, Normalize priority,\nGenerate testCaseId);
+
+:Save test cases to MongoDB;
+
+:Store test case embeddings\nin Supabase;
+
+:Return test cases array;
+
+|User|
+:See progress indicator;
+:See success notification;
+:Review generated test cases\nin test cases list;
+:Edit or delete test cases as needed;
+stop
+
+@enduml
