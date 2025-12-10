@@ -16,7 +16,7 @@ export { getRAGContext, getComprehensiveRAGContext } from "./retrieval.js";
 export { generateFeaturesFromRAG } from "./featureExtraction.js";
 
 // Analysis functions
-export { generateTestCasesFromRAG, analyzeSectionMatching } from "./analysis.js";
+export { generateTestCasesFromRAG, analyzeSectionMatching, convertTestCaseToGherkinWithAI } from "./analysis.js";
 
 // SRS detection
 export { detectSRSType } from "./srsDetection.js";

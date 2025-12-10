@@ -38,4 +38,29 @@ const projectSchema = new mongoose.Schema(
 projectSchema.index({ userId: 1 });
 projectSchema.index({ status: 1 });
 
+// Virtual fields for counts
+projectSchema.virtual("featuresCount", {
+  ref: "Feature",
+  localField: "_id",
+  foreignField: "projectId",
+  count: true,
+});
+
+projectSchema.virtual("testCasesCount", {
+  ref: "TestCase",
+  localField: "_id",
+  foreignField: "projectId",
+  count: true,
+});
+
+projectSchema.virtual("bugsCount", {
+  ref: "Bug",
+  localField: "_id",
+  foreignField: "projectId",
+  count: true,
+});
+
+projectSchema.set("toJSON", { virtuals: true });
+projectSchema.set("toObject", { virtuals: true });
+
 export const Project = mongoose.model("Project", projectSchema);

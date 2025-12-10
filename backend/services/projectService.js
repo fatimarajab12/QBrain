@@ -36,15 +36,87 @@ export async function createProject(projectData) {
   });
 
   await project.save();
-  return project;
+  
+  // Return with counts (all will be 0 for new project)
+  const projectObj = project.toObject();
+  return {
+    ...projectObj,
+    featuresCount: 0,
+    testCasesCount: 0,
+    bugsCount: 0,
+  };
 }
 
 export async function getProjectById(id) {
-  return await Project.findById(id).populate("userId", "name email");
+  const project = await Project.findById(id)
+    .populate("userId", "name email")
+    .lean();
+  
+  if (!project) {
+    return null;
+  }
+  
+  // Calculate counts
+  const { Feature } = await import("../models/Feature.js");
+  const { TestCase } = await import("../models/TestCase.js");
+  const { Bug } = await import("../models/Bug.js");
+  
+  const featuresCount = await Feature.countDocuments({ projectId: id });
+  const testCasesCount = await TestCase.countDocuments({ projectId: id });
+  const bugsCount = await Bug.countDocuments({ projectId: id });
+  
+  return {
+    ...project,
+    featuresCount,
+    testCasesCount,
+    bugsCount,
+  };
 }
 
 export async function getUserProjects(userId) {
-  return await Project.find({ userId }).sort({ createdAt: -1 });
+  const projects = await Project.find({ userId })
+    .sort({ createdAt: -1 })
+    .lean();
+  
+  // Calculate counts for each project using aggregation
+  const { Feature } = await import("../models/Feature.js");
+  const { TestCase } = await import("../models/TestCase.js");
+  const { Bug } = await import("../models/Bug.js");
+  
+  const projectIds = projects.map(p => p._id);
+  
+  // Get feature counts
+  const featureCounts = await Feature.aggregate([
+    { $match: { projectId: { $in: projectIds } } },
+    { $group: { _id: "$projectId", count: { $sum: 1 } } }
+  ]);
+  
+  // Get test case counts
+  const testCaseCounts = await TestCase.aggregate([
+    { $match: { projectId: { $in: projectIds } } },
+    { $group: { _id: "$projectId", count: { $sum: 1 } } }
+  ]);
+  
+  // Get bug counts
+  const bugCounts = await Bug.aggregate([
+    { $match: { projectId: { $in: projectIds } } },
+    { $group: { _id: "$projectId", count: { $sum: 1 } } }
+  ]);
+  
+  // Create maps for quick lookup
+  const featureCountMap = new Map(featureCounts.map(f => [f._id.toString(), f.count]));
+  const testCaseCountMap = new Map(testCaseCounts.map(tc => [tc._id.toString(), tc.count]));
+  const bugCountMap = new Map(bugCounts.map(b => [b._id.toString(), b.count]));
+  
+  // Add counts to projects
+  const projectsWithCounts = projects.map(project => ({
+    ...project,
+    featuresCount: featureCountMap.get(project._id.toString()) || 0,
+    testCasesCount: testCaseCountMap.get(project._id.toString()) || 0,
+    bugsCount: bugCountMap.get(project._id.toString()) || 0,
+  }));
+  
+  return projectsWithCounts;
 }
 
 export async function updateProject(id, updateData) {

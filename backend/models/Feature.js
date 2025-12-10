@@ -109,6 +109,13 @@ featureSchema.virtual("testCasesCount", {
   count: true,
 });
 
+featureSchema.virtual("bugsCount", {
+  ref: "Bug",
+  localField: "_id",
+  foreignField: "featureId",
+  count: true,
+});
+
 featureSchema.set("toJSON", { virtuals: true });
 featureSchema.set("toObject", { virtuals: true });
 

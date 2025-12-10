@@ -265,8 +265,8 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid or expired reset code" });
     }
 
-    user.password = await bcrypt.hash(newPassword, 12);
-
+    // Set password directly - the pre-save hook will hash it automatically
+    user.password = newPassword;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
 
@@ -301,5 +301,97 @@ export const deleteUserByEmail = async (req, res) => {
   } catch (err) {
     console.error("DeleteUserByEmail error:", err);
     return res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
+};
+
+export const getProfile = async (req, res) => {
+  try {
+    // User is attached by authenticate middleware
+    const user = req.user;
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: user._id,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerified: user.isVerified,
+        loginCount: user.loginCount || 0,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error getting profile",
+      error: error.message,
+    });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const user = req.user;
+    const { name, email } = req.body;
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
+    // Update allowed fields
+    if (name !== undefined) {
+      user.name = name;
+    }
+
+    if (email !== undefined && email !== user.email) {
+      // Check if email is already taken
+      const existingUser = await User.findOne({ email });
+      if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+        return res.status(400).json({
+          success: false,
+          message: "Email is already taken",
+        });
+      }
+      user.email = email;
+      user.isVerified = false; // Require re-verification if email changes
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: user._id,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerified: user.isVerified,
+        loginCount: user.loginCount || 0,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error updating profile",
+      error: error.message,
+    });
   }
 };

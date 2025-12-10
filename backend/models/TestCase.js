@@ -62,6 +62,11 @@ const testCaseSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    gherkin: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     testData: {
       type: Map,
       of: mongoose.Schema.Types.Mixed,

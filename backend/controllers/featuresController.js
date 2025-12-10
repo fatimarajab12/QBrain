@@ -57,6 +57,18 @@ export const getFeature = async (req, res) => {
 export const getProjectFeatures = async (req, res) => {
   try {
     const { projectId } = req.params;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log("[DEBUG] getProjectFeatures controller - projectId:", projectId);
+    }
+    
+    if (!projectId) {
+      return res.status(400).json({
+        success: false,
+        message: "Project ID is required",
+      });
+    }
+    
     const features = await featureService.getProjectFeatures(projectId);
 
     res.status(200).json({
@@ -66,6 +78,22 @@ export const getProjectFeatures = async (req, res) => {
     });
   } catch (error) {
     console.error("Get project features error:", error);
+    
+    // Handle specific error cases
+    if (error.message === "Project not found") {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+    
+    if (error.message.includes("Invalid") || error.message.includes("required")) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: "Error getting features",

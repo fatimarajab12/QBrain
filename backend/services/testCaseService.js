@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { TestCase } from "../models/TestCase.js";
 import { Feature } from "../models/Feature.js";
 import { Project } from "../models/Project.js";
-import { generateTestCasesFromRAG } from "../ai/ragService.js";
+import { generateTestCasesFromRAG, convertTestCaseToGherkinWithAI } from "../ai/ragService.js";
 import { vectorStore } from "../vector/vectorStore.js";
 import { Document } from "@langchain/core/documents";
 
@@ -56,6 +56,27 @@ export async function createTestCase(testCaseData) {
     });
 
     await testCase.save();
+
+    // Generate and save Gherkin automatically
+    try {
+      const projectId = testCase.projectId.toString();
+      const gherkin = await convertTestCaseToGherkin(testCase, true, projectId);
+      testCase.gherkin = gherkin;
+      await testCase.save();
+      console.log(`Generated and saved Gherkin for test case ${testCase._id}`);
+    } catch (gherkinError) {
+      // Log error but don't fail the creation
+      console.warn("Error generating Gherkin for test case:", gherkinError.message);
+      // Fallback to rule-based conversion
+      try {
+        const projectId = testCase.projectId.toString();
+        const gherkin = await convertTestCaseToGherkin(testCase, false, projectId);
+        testCase.gherkin = gherkin;
+        await testCase.save();
+      } catch (fallbackError) {
+        console.warn("Error with fallback Gherkin generation:", fallbackError.message);
+      }
+    }
 
     // Add all test cases (both manual and AI-generated) to vector database for chatbot support
     try {
@@ -257,6 +278,21 @@ export async function updateTestCase(testCaseId, updateData) {
       throw new Error("Test case not found");
     }
 
+    // Regenerate and save Gherkin automatically after update (rule-based only, not AI)
+    try {
+      const projectId = typeof testCase.projectId === 'object' && testCase.projectId._id 
+        ? testCase.projectId._id.toString() 
+        : testCase.projectId.toString();
+      // Use rule-based conversion for updates (not AI)
+      const gherkin = await convertTestCaseToGherkin(testCase, false, projectId);
+      testCase.gherkin = gherkin;
+      await testCase.save();
+      console.log(`Regenerated and saved Gherkin (rule-based) for test case ${testCase._id}`);
+    } catch (gherkinError) {
+      // Log error but don't fail the update
+      console.warn("Error regenerating Gherkin for test case:", gherkinError.message);
+    }
+
     // Update all test cases (both manual and AI-generated) in vector database for chatbot support
     try {
       // Handle projectId and featureId whether they're ObjectIds or populated objects
@@ -313,10 +349,14 @@ export async function deleteTestCase(testCaseId) {
     // Get test case before deletion to check if it was AI-generated
     const testCase = await TestCase.findById(id);
     if (!testCase) {
-      return { success: false, message: "Test case not found" };
+      throw new Error("Test case not found");
     }
 
-    await TestCase.findByIdAndDelete(id);
+    // Delete from MongoDB
+    const deletedTestCase = await TestCase.findByIdAndDelete(id);
+    if (!deletedTestCase) {
+      throw new Error("Test case not found or already deleted");
+    }
 
     // Delete all test cases (both manual and AI-generated) from vector database for chatbot support
     try {
@@ -445,4 +485,134 @@ export async function bulkCreateTestCases(featureId, testCasesData) {
     console.error("Error bulk creating test cases:", error);
     throw error;
   }
+}
+
+/**
+ * Convert a test case to Gherkin format
+ * @param {Object} testCase - The test case object
+ * @param {boolean} useAI - Whether to use AI for conversion (default: true)
+ * @param {string} projectId - Project ID for AI context retrieval
+ * @returns {Promise<string>|string} - Gherkin formatted string
+ */
+export async function convertTestCaseToGherkin(testCase, useAI = true, projectId = null) {
+  // Use AI conversion if enabled and projectId is available
+  if (useAI && projectId) {
+    try {
+      return await convertTestCaseToGherkinWithAI(testCase, projectId, {
+        includeFeatureContext: true,
+        improveWording: true
+      });
+    } catch (error) {
+      console.warn("AI conversion failed, falling back to rule-based conversion:", error.message);
+      // Fallback to rule-based conversion
+    }
+  }
+  
+  // Rule-based conversion (fallback or when AI is disabled)
+  // Clean feature name (remove special characters, keep spaces)
+  const featureName = (testCase.title || 'Test Feature')
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .trim() || 'Test Feature';
+  
+  let gherkin = `Feature: ${featureName}\n`;
+  
+  // Add description if available
+  if (testCase.description) {
+    gherkin += `  ${testCase.description}\n`;
+  }
+  
+  // Add scenario
+  const scenarioName = testCase.title || 'Test Scenario';
+  gherkin += `\n  Scenario: ${scenarioName}\n`;
+  
+  // Add preconditions as Given steps
+  if (testCase.preconditions && Array.isArray(testCase.preconditions) && testCase.preconditions.length > 0) {
+    testCase.preconditions.forEach((precondition, index) => {
+      const keyword = index === 0 ? 'Given' : 'And';
+      const formattedPrecondition = String(precondition).trim();
+      // Remove existing keywords if present
+      const cleanedPrecondition = formattedPrecondition.replace(/^(Given|When|Then|And)\s+/i, '');
+      gherkin += `    ${keyword} ${cleanedPrecondition}\n`;
+    });
+  }
+  
+  // Add steps as When/And steps
+  if (testCase.steps && Array.isArray(testCase.steps) && testCase.steps.length > 0) {
+    const hasPreconditions = testCase.preconditions && testCase.preconditions.length > 0;
+    testCase.steps.forEach((step, index) => {
+      const keyword = !hasPreconditions && index === 0 ? 'When' : 'And';
+      const formattedStep = String(step).trim();
+      // Remove existing keywords if present
+      const cleanedStep = formattedStep.replace(/^(Given|When|Then|And)\s+/i, '');
+      gherkin += `    ${keyword} ${cleanedStep}\n`;
+    });
+  }
+  
+  // Add expected result as Then step
+  if (testCase.expectedResult) {
+    const formattedResult = String(testCase.expectedResult).trim();
+    // Remove existing keywords if present
+    const cleanedResult = formattedResult.replace(/^(Given|When|Then|And)\s+/i, '');
+    gherkin += `    Then ${cleanedResult}\n`;
+  }
+  
+  return gherkin;
+}
+
+/**
+ * Convert multiple test cases to Gherkin format
+ * @param {Array} testCases - Array of test case objects
+ * @param {string} featureName - Optional feature name (defaults to first test case title)
+ * @returns {string} - Gherkin formatted string with multiple scenarios
+ */
+export function convertTestCasesToGherkin(testCases, featureName = null) {
+  if (!Array.isArray(testCases) || testCases.length === 0) {
+    throw new Error('Test cases array is required and must not be empty');
+  }
+  
+  // Use provided feature name or derive from first test case
+  const feature = featureName || 
+    (testCases[0].title || 'Test Feature')
+      .replace(/[^a-zA-Z0-9\s]/g, '')
+      .trim() || 'Test Feature';
+  
+  let gherkin = `Feature: ${feature}\n`;
+  
+  // Add description from first test case if available
+  if (testCases[0].description) {
+    gherkin += `  ${testCases[0].description}\n`;
+  }
+  
+  // Add each test case as a scenario
+  testCases.forEach((testCase, index) => {
+    const scenarioName = testCase.title || `Scenario ${index + 1}`;
+    gherkin += `\n  Scenario: ${scenarioName}\n`;
+    
+    // Add preconditions
+    if (testCase.preconditions && Array.isArray(testCase.preconditions) && testCase.preconditions.length > 0) {
+      testCase.preconditions.forEach((precondition, idx) => {
+        const keyword = idx === 0 ? 'Given' : 'And';
+        const formattedPrecondition = String(precondition).trim().replace(/^(Given|When|Then|And)\s+/i, '');
+        gherkin += `    ${keyword} ${formattedPrecondition}\n`;
+      });
+    }
+    
+    // Add steps
+    if (testCase.steps && Array.isArray(testCase.steps) && testCase.steps.length > 0) {
+      const hasPreconditions = testCase.preconditions && testCase.preconditions.length > 0;
+      testCase.steps.forEach((step, idx) => {
+        const keyword = !hasPreconditions && idx === 0 ? 'When' : 'And';
+        const formattedStep = String(step).trim().replace(/^(Given|When|Then|And)\s+/i, '');
+        gherkin += `    ${keyword} ${formattedStep}\n`;
+      });
+    }
+    
+    // Add expected result
+    if (testCase.expectedResult) {
+      const formattedResult = String(testCase.expectedResult).trim().replace(/^(Given|When|Then|And)\s+/i, '');
+      gherkin += `    Then ${formattedResult}\n`;
+    }
+  });
+  
+  return gherkin;
 }

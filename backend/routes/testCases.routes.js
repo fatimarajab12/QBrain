@@ -34,4 +34,8 @@ router.put("/:id", testCasesController.updateTestCase);
 
 router.delete("/:id", testCasesController.deleteTestCase);
 
+// Gherkin conversion endpoints
+router.get("/:id/gherkin", testCasesController.convertToGherkin);
+router.get("/features/:featureId/gherkin", testCasesController.convertFeatureTestCasesToGherkin);
+
 export default router;

@@ -7,13 +7,20 @@ import { Document } from "@langchain/core/documents";
 
 
 function validateObjectId(id, fieldName = "ID") {
-  if (!id) return null;
-  
-  if (mongoose.Types.ObjectId.isValid(id) && id.toString().length === 24) {
-    return id;
+  if (!id) {
+    throw new Error(`${fieldName} is required`);
   }
   
-  throw new Error(`Invalid ${fieldName}: Must be a valid MongoDB ObjectId (24 hex characters)`);
+  // Convert to string if it's not already
+  const idString = id.toString().trim();
+  
+  // Check if it's a valid ObjectId format (24 hex characters)
+  if (mongoose.Types.ObjectId.isValid(idString) && idString.length === 24) {
+    // Return as string - mongoose will handle conversion
+    return idString;
+  }
+  
+  throw new Error(`Invalid ${fieldName}: Must be a valid MongoDB ObjectId (24 hex characters). Received: ${idString}`);
 }
 
 /**
@@ -98,7 +105,20 @@ export async function createFeature(featureData) {
       console.error("Error adding feature to vector database:", vectorError);
     }
 
-    return feature;
+    // Calculate counts for the new feature
+    const { TestCase } = await import("../models/TestCase.js");
+    const { Bug } = await import("../models/Bug.js");
+    
+    const testCasesCount = await TestCase.countDocuments({ featureId: feature._id });
+    const bugsCount = await Bug.countDocuments({ featureId: feature._id });
+    
+    // Convert to plain object and add counts
+    const featureObj = feature.toObject();
+    return {
+      ...featureObj,
+      testCasesCount,
+      bugsCount,
+    };
   } catch (error) {
     console.error("Error creating feature:", error);
     throw error;
@@ -113,7 +133,22 @@ export async function getFeatureById(featureId) {
       .populate("projectId", "_id name")
       .lean();
 
-    return feature;
+    if (!feature) {
+      return null;
+    }
+
+    // Calculate counts
+    const { TestCase } = await import("../models/TestCase.js");
+    const { Bug } = await import("../models/Bug.js");
+    
+    const testCasesCount = await TestCase.countDocuments({ featureId: id });
+    const bugsCount = await Bug.countDocuments({ featureId: id });
+    
+    return {
+      ...feature,
+      testCasesCount,
+      bugsCount,
+    };
   } catch (error) {
     console.error("Error getting feature:", error);
     throw error;
@@ -136,10 +171,22 @@ export async function hasAIGeneratedFeatures(projectId) {
 
 export async function getProjectFeatures(projectId) {
   try {
+    if (process.env.NODE_ENV === 'development') {
+      console.log("[DEBUG] getProjectFeatures called with projectId:", projectId);
+    }
+    
+    if (!projectId) {
+      throw new Error("Project ID is required");
+    }
+    
     const id = validateObjectId(projectId, "Project ID");
     
-    const project = await Project.findById(id).select("_id");
+    const project = await Project.findById(id).select("_id userId");
+    
     if (!project) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("[ERROR] Project not found with ID:", id.toString());
+      }
       throw new Error("Project not found");
     }
 
@@ -150,7 +197,40 @@ export async function getProjectFeatures(projectId) {
       })
       .lean();
 
-    return features;
+    // Calculate counts for each feature using aggregation
+    const { TestCase } = await import("../models/TestCase.js");
+    const { Bug } = await import("../models/Bug.js");
+    
+    const featureIds = features.map(f => f._id);
+    
+    // Get test case counts
+    const testCaseCounts = await TestCase.aggregate([
+      { $match: { featureId: { $in: featureIds } } },
+      { $group: { _id: "$featureId", count: { $sum: 1 } } }
+    ]);
+    
+    // Get bug counts
+    const bugCounts = await Bug.aggregate([
+      { $match: { featureId: { $in: featureIds } } },
+      { $group: { _id: "$featureId", count: { $sum: 1 } } }
+    ]);
+    
+    // Create maps for quick lookup
+    const testCaseCountMap = new Map(testCaseCounts.map(tc => [tc._id.toString(), tc.count]));
+    const bugCountMap = new Map(bugCounts.map(b => [b._id.toString(), b.count]));
+    
+    // Add counts to features
+    const featuresWithCounts = features.map(feature => ({
+      ...feature,
+      testCasesCount: testCaseCountMap.get(feature._id.toString()) || 0,
+      bugsCount: bugCountMap.get(feature._id.toString()) || 0,
+    }));
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log("[DEBUG] Found", featuresWithCounts.length, "features for project:", id);
+    }
+    
+    return featuresWithCounts;
   } catch (error) {
     console.error("Error getting project features:", error);
     throw error;
@@ -181,11 +261,47 @@ export async function updateFeature(featureId, updateData) {
       updateData.priority = normalizePriority(updateData.priority);
     }
 
-    const feature = await Feature.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    );
+    // Handle reasoning deletion (if set to null, remove it from database)
+    const updateQuery = { $set: {} };
+    const unsetQuery = { $unset: {} };
+    
+    for (const [key, value] of Object.entries(updateData)) {
+      if (value === null && key === 'reasoning') {
+        // Remove reasoning field from database
+        unsetQuery.$unset[key] = "";
+      } else {
+        updateQuery.$set[key] = value;
+      }
+    }
+
+    // Build final update query
+    const finalUpdate = {};
+    if (Object.keys(updateQuery.$set).length > 0) {
+      Object.assign(finalUpdate, updateQuery);
+    }
+    if (Object.keys(unsetQuery.$unset).length > 0) {
+      if (finalUpdate.$set) {
+        finalUpdate.$unset = unsetQuery.$unset;
+      } else {
+        Object.assign(finalUpdate, unsetQuery);
+      }
+    }
+
+    // Use the appropriate update query
+    let feature;
+    if (Object.keys(finalUpdate).length > 0) {
+      feature = await Feature.findByIdAndUpdate(
+        id,
+        finalUpdate,
+        { new: true, runValidators: true }
+      );
+    } else {
+      feature = await Feature.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+    }
 
     // Update all features (both manual and AI-generated) in vector database for chatbot support
     try {
@@ -223,7 +339,20 @@ export async function updateFeature(featureId, updateData) {
       console.error("Error updating feature in vector database:", vectorError);
     }
 
-    return feature;
+    // Calculate counts for the updated feature
+    const { TestCase } = await import("../models/TestCase.js");
+    const { Bug } = await import("../models/Bug.js");
+    
+    const testCasesCount = await TestCase.countDocuments({ featureId: feature._id });
+    const bugsCount = await Bug.countDocuments({ featureId: feature._id });
+    
+    // Convert to plain object and add counts
+    const featureObj = feature.toObject();
+    return {
+      ...featureObj,
+      testCasesCount,
+      bugsCount,
+    };
   } catch (error) {
     console.error("Error updating feature:", error);
     throw error;

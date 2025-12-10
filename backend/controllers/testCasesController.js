@@ -1,4 +1,5 @@
 import * as testCaseService from "../services/testCaseService.js";
+import { convertTestCaseToGherkin, convertTestCasesToGherkin } from "../services/testCaseService.js";
 
 export const createTestCase = async (req, res) => {
   try {
@@ -290,6 +291,22 @@ export const deleteTestCase = async (req, res) => {
     });
   } catch (error) {
     console.error("Delete test case error:", error);
+    
+    if (error.message === "Test case not found" || error.message === "Test case not found or already deleted") {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ID format",
+        error: error.message,
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: "Error deleting test case",
@@ -346,6 +363,90 @@ export const bulkCreateTestCases = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error bulk creating test cases",
+      error: error.message,
+    });
+  }
+};
+
+export const convertToGherkin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { useAI = "true" } = req.query; // Default to AI enabled
+    const testCase = await testCaseService.getTestCaseById(id);
+
+    if (!testCase) {
+      return res.status(404).json({
+        success: false,
+        message: "Test case not found",
+      });
+    }
+
+    // Get projectId from testCase (handle both populated and non-populated cases)
+    let projectId = null;
+    if (testCase.projectId) {
+      projectId = typeof testCase.projectId === 'object' && testCase.projectId._id
+        ? testCase.projectId._id.toString()
+        : testCase.projectId.toString();
+    }
+    const shouldUseAI = useAI === "true" || useAI === true;
+
+    // Convert to Gherkin (AI if enabled, otherwise rule-based)
+    const gherkin = await testCaseService.convertTestCaseToGherkin(
+      testCase,
+      shouldUseAI,
+      projectId
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `Test case converted to Gherkin successfully using ${shouldUseAI ? 'AI' : 'rule-based'} conversion`,
+      data: {
+        gherkin,
+        testCaseId: testCase._id,
+        testCaseTitle: testCase.title,
+        conversionMethod: shouldUseAI ? 'AI' : 'rule-based',
+      },
+    });
+  } catch (error) {
+    console.error("Convert to Gherkin error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error converting test case to Gherkin",
+      error: error.message,
+    });
+  }
+};
+
+export const convertFeatureTestCasesToGherkin = async (req, res) => {
+  try {
+    const { featureId } = req.params;
+    const { featureName } = req.query;
+
+    const testCases = await testCaseService.getFeatureTestCases(featureId);
+
+    if (!testCases || testCases.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No test cases found for this feature",
+      });
+    }
+
+    const gherkin = convertTestCasesToGherkin(testCases, featureName || null);
+
+    res.status(200).json({
+      success: true,
+      message: `Converted ${testCases.length} test cases to Gherkin successfully`,
+      data: {
+        gherkin,
+        featureId,
+        testCasesCount: testCases.length,
+      },
+    });
+  } catch (error) {
+    console.error("Convert feature test cases to Gherkin error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error converting test cases to Gherkin",
       error: error.message,
     });
   }

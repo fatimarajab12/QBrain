@@ -1,0 +1,285 @@
+/* Custom font imports for Arabic/English blend */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700&family=Inter:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-arabic: 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Inter', 'Tajawal', system-ui, -apple-system, sans-serif;
+}
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 220 25% 98%;
+    --foreground: 230 25% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 230 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 25% 12%;
+
+    --primary: 197 100% 47%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 197 100% 42%;
+
+    --secondary: 220 20% 95%;
+    --secondary-foreground: 230 25% 12%;
+
+    --muted: 220 20% 95%;
+    --muted-foreground: 230 15% 45%;
+
+    --accent: 197 100% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 145 65% 48%;
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 197 100% 47%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(197 100% 47%) 0%, hsl(217 91% 60%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(197 100% 47%) 0%, hsl(217 91% 60%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(197 100% 47%) 0%, hsl(217 91% 60%) 50%, hsl(197 100% 47%) 100%);
+    
+    --shadow-soft: 0 2px 20px -4px hsl(197 100% 47% / 0.15);
+    --shadow-medium: 0 4px 30px -6px hsl(197 100% 47% / 0.25);
+    --shadow-strong: 0 8px 40px -8px hsl(197 100% 47% / 0.35);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 230 25% 12%;
+    --sidebar-primary: 197 100% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 95%;
+    --sidebar-accent-foreground: 230 25% 12%;
+    --sidebar-border: 220 20% 88%;
+    --sidebar-ring: 197 100% 47%;
+  }
+
+  .dark {
+    --background: 230 25% 8%;
+    --foreground: 220 20% 95%;
+
+    --card: 230 20% 12%;
+    --card-foreground: 220 20% 95%;
+
+    --popover: 230 20% 12%;
+    --popover-foreground: 220 20% 95%;
+
+    --primary: 197 100% 52%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 197 100% 47%;
+
+    --secondary: 230 20% 18%;
+    --secondary-foreground: 220 20% 95%;
+
+    --muted: 230 20% 18%;
+    --muted-foreground: 220 15% 60%;
+
+    --accent: 197 100% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 145 65% 52%;
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 230 20% 18%;
+    --input: 230 20% 18%;
+    --ring: 197 100% 52%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(197 100% 52%) 0%, hsl(217 91% 65%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(197 100% 52%) 0%, hsl(217 91% 65%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(197 100% 52%) 0%, hsl(217 91% 65%) 50%, hsl(197 100% 52%) 100%);
+    
+    --shadow-soft: 0 2px 20px -4px hsl(197 100% 52% / 0.25);
+    --shadow-medium: 0 4px 30px -6px hsl(197 100% 52% / 0.35);
+    --shadow-strong: 0 8px 40px -8px hsl(197 100% 52% / 0.45);
+
+    --sidebar-background: 230 20% 10%;
+    --sidebar-foreground: 220 20% 95%;
+    --sidebar-primary: 197 100% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 230 20% 18%;
+    --sidebar-accent-foreground: 220 20% 95%;
+    --sidebar-border: 230 20% 18%;
+    --sidebar-ring: 197 100% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-arabic);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+    font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+    font-weight: 600;
+  }
+
+  /* Slightly darker default text across pages */
+  p, span, small, label, .text-foreground {
+    color: hsl(var(--foreground) / 0.9);
+  }
+  
+  /* Better font rendering for Arabic text if needed */
+  * {
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-ai {
+    background: linear-gradient(135deg, hsl(197 100% 47%) 0%, hsl(217 91% 60%) 100%);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .shadow-strong {
+    box-shadow: var(--shadow-strong);
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Enhanced animations for landing page */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 229, 255, 0.1),
+      transparent
+    );
+    background-size: 1000px 100%;
+  }
+
+  /* Smooth gradient animation */
+  @keyframes gradientShift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+  }
+
+  /* Bold styling for system operational text */
+  .text-operational-bold {
+    font-weight: 700 !important;
+  }
+
+  /* Sidebar font size improvements */
+  [data-sidebar="sidebar"] {
+    font-size: 0.95rem;
+  }
+
+  [data-sidebar="sidebar"] button,
+  [data-sidebar="sidebar"] a,
+  [data-sidebar="sidebar"] span {
+    font-size: 0.95rem;
+  }
+}
