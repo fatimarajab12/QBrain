@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { LoginForm } from "@/types/auth";
@@ -28,6 +28,7 @@ const Login = ({ onSwitchToSignup, initialEmail }: LoginProps) => {
   const location = useLocation();
   const { toast } = useToast();
   const { login, isLoading, error, setError } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
   
   const [loginForm, setLoginForm] = useState<LoginForm>({
     email: initialEmail || location.state?.email || "",
@@ -40,6 +41,19 @@ const Login = ({ onSwitchToSignup, initialEmail }: LoginProps) => {
       toast({
         title: "Password Reset Successful",
         description: "You can now sign in with your new password.",
+      });
+      // Clear the state to prevent showing the message again
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, toast]);
+
+  // Show message if coming from signup
+  useEffect(() => {
+    if (location.state?.message) {
+      toast({
+        title: "Account Created",
+        description: location.state.message,
+        duration: 8000,
       });
       // Clear the state to prevent showing the message again
       window.history.replaceState({}, document.title);
@@ -87,64 +101,78 @@ const Login = ({ onSwitchToSignup, initialEmail }: LoginProps) => {
     <AuthLayout title="Welcome back" description="Sign in to your account to continue">
       <form onSubmit={handleLogin} className="space-y-5">
         {error && (
-          <div className="p-4 bg-destructive/10 text-destructive text-sm rounded-lg border border-destructive/30 backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="p-4 bg-destructive/10 text-destructive text-sm rounded-xl border border-destructive/30 backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
+              <div className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
               {error}
             </div>
           </div>
         )}
         
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium text-foreground/90">
-            Email
+          <Label htmlFor="email" className="text-sm font-semibold text-foreground">
+            Email Address
           </Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="name@example.com"
-            value={loginForm.email}
-            onChange={(e) => updateLoginForm("email", e.target.value)}
-            required
-            disabled={isLoading}
-            className="h-11 border-border/50 focus:border-cyan-500/50 focus:ring-cyan-500/20 transition-all duration-200"
-          />
+          <div className="relative group">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-cyan-500 transition-colors duration-200" />
+            <Input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              value={loginForm.email}
+              onChange={(e) => updateLoginForm("email", e.target.value)}
+              required
+              disabled={isLoading}
+              className="h-12 pl-10 border-border/50 focus:border-cyan-500 focus:ring-cyan-500/20 transition-all duration-200 rounded-lg hover:border-cyan-400/50"
+            />
+          </div>
         </div>
         
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-sm font-medium text-foreground/90">
+            <Label htmlFor="password" className="text-sm font-semibold text-foreground">
               Password
             </Label>
             <button
               type="button"
               onClick={() => navigate("/forgot-password")}
-              className="text-xs text-cyan-500 hover:text-cyan-400 transition-colors disabled:opacity-50 font-medium"
+              className="text-xs text-cyan-600 hover:text-cyan-500 transition-colors disabled:opacity-50 font-semibold hover:underline"
               disabled={isLoading}
             >
               Forgot password?
             </button>
           </div>
-          <Input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            value={loginForm.password}
-            onChange={(e) => updateLoginForm("password", e.target.value)}
-            required
-            disabled={isLoading}
-            className="h-11 border-border/50 focus:border-cyan-500/50 focus:ring-cyan-500/20 transition-all duration-200"
-          />
+          <div className="relative group">
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-cyan-500 transition-colors duration-200" />
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={loginForm.password}
+              onChange={(e) => updateLoginForm("password", e.target.value)}
+              required
+              disabled={isLoading}
+              className="h-12 pl-10 pr-10 border-border/50 focus:border-cyan-500 focus:ring-cyan-500/20 transition-all duration-200 rounded-lg hover:border-cyan-400/50"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-cyan-500 transition-colors p-1 rounded-md hover:bg-cyan-50 dark:hover:bg-cyan-950/20"
+              disabled={isLoading}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
         
         <Button
           type="submit"
-          className="w-full h-11 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 hover:from-cyan-400 hover:via-blue-400 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] font-semibold"
+          className="w-full h-12 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 hover:from-cyan-400 hover:via-blue-400 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] font-bold text-base rounded-lg"
           disabled={isLoading}
         >
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               Signing in...
             </>
           ) : (
@@ -153,13 +181,13 @@ const Login = ({ onSwitchToSignup, initialEmail }: LoginProps) => {
         </Button>
 
         {/* Switch to signup */}
-        <div className="text-center pt-2">
+        <div className="text-center pt-4">
           <p className="text-sm text-muted-foreground">
             Don't have an account?{" "}
             <button
               type="button"
               onClick={onSwitchToSignup}
-              className="text-cyan-500 hover:text-cyan-400 font-semibold hover:underline transition-colors"
+              className="text-cyan-600 hover:text-cyan-500 font-bold hover:underline transition-colors"
             >
               Sign up
             </button>

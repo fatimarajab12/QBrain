@@ -1,13 +1,25 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, FileText, Bug, BarChart3, Zap, Shield, Brain } from "lucide-react";
+import { ArrowRight, Sparkles, FileText, Bug, BarChart3, Zap, Shield, Brain, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import Orb from "../components/custom/Orb";
 import RotatingText from '../components/ui/rotation-text';
 import MagicBento from '../components/ui/Magic-Bento';
 import Logo from "@/components/Logo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 
 const Index = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const features = [
     {
       icon: Sparkles,
@@ -50,22 +62,40 @@ const Index = () => {
   return (
     <div className="min-h-screen relative bg-background text-foreground">
       {/* Enhanced Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-sm">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Logo size={40} showText={true} textSize="lg" />
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled 
+          ? 'bg-background/98 backdrop-blur-xl border-b border-border shadow-lg shadow-cyan-500/5' 
+          : 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-sm'
+      }`}>
+        <div className="container mx-auto px-4 h-16 md:h-18 flex items-center justify-between">
+          <Link to="/" className="flex items-center">
+            <Logo size={40} showText={true} textSize="lg" />
+          </Link>
+          
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <a 
+              href="#features" 
+              className="text-sm font-medium text-muted-foreground hover:text-cyan-400 transition-colors relative group"
+            >
               Features
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-cyan-400 group-hover:w-full transition-all duration-300"></span>
             </a>
-            <a href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <a 
+              href="#how-it-works" 
+              className="text-sm font-medium text-muted-foreground hover:text-cyan-400 transition-colors relative group"
+            >
               How It Works
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-cyan-400 group-hover:w-full transition-all duration-300"></span>
             </a>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center gap-3">
             <Link to="/login">
               <Button 
                 variant="ghost" 
-                className="hover:bg-primary/10 hover:text-primary transition-all duration-200 hidden sm:flex"
+                className="hover:bg-primary/10 hover:text-primary transition-all duration-200"
               >
                 Login
               </Button>
@@ -75,6 +105,53 @@ const Index = () => {
                 Get Started <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        <div className={`md:hidden overflow-hidden transition-all duration-300 ${
+          isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        }`}>
+          <div className="container mx-auto px-4 py-4 space-y-3 border-t border-border/50 bg-background/98 backdrop-blur-xl">
+            <a 
+              href="#features" 
+              className="block py-2 text-sm font-medium text-muted-foreground hover:text-cyan-400 transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Features
+            </a>
+            <a 
+              href="#how-it-works" 
+              className="block py-2 text-sm font-medium text-muted-foreground hover:text-cyan-400 transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              How It Works
+            </a>
+            <div className="pt-2 space-y-2 border-t border-border/50">
+              <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start">
+                  Login
+                </Button>
+              </Link>
+              <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white">
+                  Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
@@ -105,7 +182,7 @@ const Index = () => {
               
               <RotatingText
                 texts={['QA Testing', 'Test Automation', 'Quality Assurance']}
-                mainClassName="bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-cyan-500/30 border border-cyan-400/30 backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300"
+                mainClassName="bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-cyan-500/30 border border-cyan-400/30 backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300 text-3xl md:text-4xl"
                 staggerFrom={"first"}
                 initial={{ y: "100%", opacity: 0, scale: 0.8 }}
                 animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -287,9 +364,9 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8 px-4 relative z-10 bg-background/50 backdrop-blur-sm">
-        <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+      <footer className="border-t border-border/50 bg-gradient-to-b from-background to-muted/10 relative z-10">
+        <div className="container mx-auto px-4 py-10 md:py-12">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
             <div className="flex items-center gap-3">
               <Logo size={32} showText={true} textSize="sm" />
               <span className="text-sm text-muted-foreground hidden sm:inline">
@@ -297,13 +374,29 @@ const Index = () => {
               </span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-              <a href="#how-it-works" className="hover:text-foreground transition-colors">How It Works</a>
-              <a href="#benefits" className="hover:text-foreground transition-colors">Benefits</a>
+              <a href="#features" className="hover:text-cyan-400 transition-colors">Features</a>
+              <a href="#how-it-works" className="hover:text-cyan-400 transition-colors">How It Works</a>
+              <Link to="/login" className="hover:text-cyan-400 transition-colors">Get Started</Link>
             </div>
-            <p className="text-xs text-muted-foreground">
-              © 2024 QBrain
-            </p>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-border/50 pt-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+              <p>© {new Date().getFullYear()} QBrain. All rights reserved.</p>
+              <div className="flex items-center gap-4">
+                <a href="#" className="hover:text-cyan-400 transition-colors" aria-label="GitHub">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                </a>
+                <a href="#" className="hover:text-cyan-400 transition-colors" aria-label="Twitter">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

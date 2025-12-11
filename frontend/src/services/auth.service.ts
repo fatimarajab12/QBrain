@@ -107,19 +107,11 @@ export const authService = {
       const result = await response.json();
       
       if (result.success && result.data) {
-        // Store token
-        if (result.data.token) {
-          localStorage.setItem('authToken', result.data.token);
-        }
-        
-        // Store user ID for future API calls
-        if (result.data.user?.id) {
-          localStorage.setItem('userId', result.data.user.id);
-        }
-
+        // Don't store token or user - user must verify email first
+        // Return data without storing authentication info
         return {
           user: transformUser(result.data.user),
-          token: result.data.token,
+          token: result.data.token, // Return but don't store
           verificationToken: result.data.verificationToken, // Only in development
         };
       }

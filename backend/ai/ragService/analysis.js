@@ -460,13 +460,7 @@ Generate comprehensive matching analysis:`);
   }
 }
 
-/**
- * Converts a test case to Gherkin format using AI
- * @param {Object} testCase - Test case object
- * @param {string} projectId - Project ID for context retrieval
- * @param {Object} options - Options for conversion
- * @returns {Promise<string>} Gherkin formatted string
- */
+
 export async function convertTestCaseToGherkinWithAI(
   testCase,
   projectId,

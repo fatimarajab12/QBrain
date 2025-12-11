@@ -7,45 +7,7 @@ import { expandQuery } from "../../utils/textProcessing.js";
 import { COMPREHENSIVE_SRS_QUERIES } from "./constants.js";
 
 
-/**
 
- * This function performs semantic similarity search to find the most relevant SRS document chunks
- * that match the given query. It's a core component of the RAG pipeline for feature extraction.
- * 
- * Process:
- * 1. Query Expansion: Enhances the original query by adding related domain terms (requirements, 
- *    features, specifications, workflows, etc.) to improve retrieval accuracy. This helps find
- *    semantically similar content even if exact keywords don't match.
- * 
- * 2. Vector Similarity Search: Uses the expanded query to search the vector database (Supabase)
- *    for chunks with similar embeddings. The vector store contains pre-embedded SRS document
- *    chunks, and similarity is calculated using cosine similarity in the embedding space.
- * 
- * 3. Result Transformation: Converts the raw vector search results into a standardized format:
- *    - Extracts the text content from each chunk
- *    - Preserves metadata (section IDs, source, etc.)
- *    - Calculates relevance score (1 - distance score), where lower distance = higher relevance
- * 
- */
-/**
- * Effect of increasing nResults:
- * 
- * POSITIVE EFFECTS:
- * - More context chunks: Retrieves more relevant SRS document sections
- * - Better coverage: Captures more features from different parts of the SRS
- * - Higher recall: Less likely to miss important requirements
- * - More comprehensive extraction: LLM has more context to work with
- * 
- * NEGATIVE EFFECTS:
- * - Lower precision: Later results (rank 6-10, 11-20, etc.) have lower relevance scores
- * - Larger prompts: More tokens sent to LLM = higher API costs
- * - Slower processing: More data to process and embed
- * - Potential noise: Less relevant chunks might dilute the context quality
- * - Token limits: May exceed LLM context window if too many chunks
- * 
- * - Production (Simple): nResults = 15-20 (balanced)
- * 
- */
 export async function getRAGContext(projectId, query, nResults = 10) {
   try {
     // Expand query with related terms for better retrieval

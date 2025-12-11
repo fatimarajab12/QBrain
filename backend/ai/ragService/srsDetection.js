@@ -87,13 +87,11 @@ export async function detectSRSType(projectId) {
     // Calculate confidence with boost for clear winner
     let confidence = scores[detectedType].percentage;
     
-    // Boost confidence if there's a clear winner (difference > 20%)
     if (sortedTypes.length > 1) {
       const secondBestScore = sortedTypes[1][1].totalScore;
       const scoreDifference = scores[detectedType].totalScore - secondBestScore;
       
       if (scoreDifference > 0.2) {
-        // Clear winner - boost confidence
         confidence = Math.min(confidence + 15, 95);
       } else if (scoreDifference < 0.1) {
         // Close scores - reduce confidence

@@ -106,20 +106,7 @@ export async function generateFeaturesFromRAG(projectId, options = {}) {
   try {
     const safeOptions = options && typeof options === 'object' ? options : {};
     
-    /**
-     * ⚠️ PRODUCTION CONFIGURATION WARNING ⚠️
-     * 
-     *  change these default values to improve feature coverage:
-     * 
-     * RECOMMENDED PRODUCTION SETTINGS:
-     * - useComprehensiveRetrieval: true  (CRITICAL: Enables 8 specialized queries for better coverage)
-     * - chunksPerQuery: 5-7              (Increase from 5 to get more context per query)
-     * - model: "gpt-4o"                  (Use GPT-4o instead of mini for better extraction quality)
-     * - nContextChunks: 20               (Keep or increase if not using comprehensive retrieval)
-     * 
-     * Current defaults are optimized for development/testing (lower cost, faster).
-     * Production requires comprehensive retrieval for maximum feature extraction coverage.
-     */
+
     const { 
       nContextChunks = 20, 
       model = "gpt-4o-mini",  // Using gpt-4o-mini for cost efficiency
@@ -127,13 +114,6 @@ export async function generateFeaturesFromRAG(projectId, options = {}) {
       chunksPerQuery = 7                 // Increased from 5 to 7 for better context per query
     } = safeOptions;
 
-    /**       
-     * Benefits:
-     * - Enables adaptive prompting: Different SRS types require different extraction strategies
-     * - Improves accuracy: The LLM receives type-specific guidance (e.g., "look for User Stories" for Agile)
-     * - Better feature classification: Understanding the SRS structure helps extract features in the correct format
-     * - Handles multiple standards: Supports IEEE 830, Agile, Energy, Enterprise, and other formats
-     */
     const srsType = await detectSRSType(projectId);
     console.log(`Using SRS type: ${srsType.name} for feature extraction`);
 
@@ -142,7 +122,6 @@ export async function generateFeaturesFromRAG(projectId, options = {}) {
     let groupedChunks = null;
     /**
      * Context Retrieval Strategy 
-     * 
      * useComprehensiveRetrieval becomes true when:
      * 1. Explicitly passed in options: { useComprehensiveRetrieval: true }
      * 2. Called from testCaseService.js (defaults to true for test case generation)
@@ -155,7 +134,6 @@ export async function generateFeaturesFromRAG(projectId, options = {}) {
      * 
      */
     if (useComprehensiveRetrieval) {
-      // NEW: Smart retrieval with 8 queries
       const comprehensiveResult = await getComprehensiveRAGContext(projectId, chunksPerQuery);
       contextChunks = comprehensiveResult.chunks;
       

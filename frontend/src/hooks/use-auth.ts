@@ -69,30 +69,32 @@ export const useAuth = () => {
     try {
       const response = await authService.signup(userData);
       
-      authStorage.setToken(response.token);
-      authStorage.setUser(response.user);
-      setUser(response.user);
+      // Don't store token or user - user must verify email first
+      // Don't authenticate the user until email is verified
 
-      // Store userId if available
-      if (response.user.id) {
-        localStorage.setItem('userId', response.user.id);
-      }
-
-      // Show verification message if token is provided (development mode)
+      // Show verification message
       if (response.verificationToken) {
+        // Development mode - show token
         toast({
-          title: "Account Created",
-          description: `Welcome to QBrain! Please check your email to verify your account. Verification token: ${response.verificationToken}`,
+          title: "Account Created Successfully",
+          description: `Please check your email to verify your account. Verification token: ${response.verificationToken}`,
           duration: 10000,
         });
       } else {
         toast({
-          title: "Account Created",
-          description: "Welcome to QBrain! Please check your email to verify your account.",
+          title: "Account Created Successfully",
+          description: "Please check your email to verify your account. After verification, you can sign in.",
+          duration: 8000,
         });
       }
 
-      navigate("/dashboard");
+      // Navigate to login page with email pre-filled
+      navigate("/login", { 
+        state: { 
+          email: userData.email,
+          message: "Account created! Please verify your email before signing in." 
+        } 
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Signup failed. Please try again.";
       setError(errorMessage);
