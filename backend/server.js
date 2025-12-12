@@ -9,6 +9,7 @@ import featuresRouter from "./routes/features.routes.js";
 import testCasesRouter from "./routes/testCases.routes.js";
 import bugsRouter from "./routes/bugs.routes.js";
 import aiRouter from "./routes/ai.routes.js";
+import { errorHandler } from "./middleware/errorHandler.middleware.js";
 dotenv.config();
 const app = express();
 connectDB();
@@ -53,5 +54,9 @@ app.use("/api/features", featuresRouter);
 app.use("/api/test-cases", testCasesRouter);
 app.use("/api/bugs", bugsRouter);
 app.use("/api/ai", aiRouter);
+
+// Error Handler Middleware (must be last)
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -1,23 +1,18 @@
 import * as bugService from "../services/bugService.js";
+import { BadRequestError, NotFoundError, UnauthorizedError } from "../utils/AppError.js";
 
-export const createBug = async (req, res) => {
+export const createBug = async (req, res, next) => {
   try {
     const bugData = req.body;
 
     if (!bugData || !bugData.title) {
-      return res.status(400).json({
-        success: false,
-        message: "Title is required",
-      });
+      return next(new BadRequestError("Title is required"));
     }
 
     // Get user ID from authenticated request
     const userId = req.user?._id || req.userId;
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
+      return next(new UnauthorizedError("Authentication required"));
     }
 
     bugData.reportedBy = userId;
@@ -33,10 +28,7 @@ export const createBug = async (req, res) => {
     }
 
     if (!bugData.featureId) {
-      return res.status(400).json({
-        success: false,
-        message: "Feature ID is required (in body or params)",
-      });
+      return next(new BadRequestError("Feature ID is required (in body or params)"));
     }
 
     const bug = await bugService.createBug(bugData);
@@ -47,24 +39,14 @@ export const createBug = async (req, res) => {
       data: bug,
     });
   } catch (error) {
-    console.error("Create bug error:", error);
-    
     if (error.message === "Feature not found" || error.message === "Project not found") {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return next(new NotFoundError(error.message));
     }
-    
-    res.status(500).json({
-      success: false,
-      message: "Error creating bug",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const createBugForFeature = async (req, res) => {
+export const createBugForFeature = async (req, res, next) => {
   try {
     const { featureId, projectId } = req.params;
     const bugData = { ...req.body, featureId };
@@ -74,19 +56,13 @@ export const createBugForFeature = async (req, res) => {
     }
 
     if (!bugData.title) {
-      return res.status(400).json({
-        success: false,
-        message: "Title is required",
-      });
+      return next(new BadRequestError("Title is required"));
     }
 
     // Get user ID from authenticated request
     const userId = req.user?._id || req.userId;
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
+      return next(new UnauthorizedError("Authentication required"));
     }
 
     bugData.reportedBy = userId;
@@ -99,24 +75,14 @@ export const createBugForFeature = async (req, res) => {
       data: bug,
     });
   } catch (error) {
-    console.error("Create bug for feature error:", error);
-    
     if (error.message === "Feature not found" || error.message === "Project not found") {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return next(new NotFoundError(error.message));
     }
-    
-    res.status(500).json({
-      success: false,
-      message: "Error creating bug",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getBug = async (req, res) => {
+export const getBug = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -127,24 +93,14 @@ export const getBug = async (req, res) => {
       data: bug,
     });
   } catch (error) {
-    console.error("Get bug error:", error);
-    
     if (error.message === "Bug not found") {
-      return res.status(404).json({
-        success: false,
-        message: "Bug not found",
-      });
+      return next(new NotFoundError("Bug not found"));
     }
-    
-    res.status(500).json({
-      success: false,
-      message: "Error getting bug",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getProjectBugs = async (req, res) => {
+export const getProjectBugs = async (req, res, next) => {
   try {
     const { projectId } = req.params;
     const filters = {
@@ -165,24 +121,14 @@ export const getProjectBugs = async (req, res) => {
       data: bugs,
     });
   } catch (error) {
-    console.error("Get project bugs error:", error);
-    
     if (error.message === "Project not found") {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
+      return next(new NotFoundError("Project not found"));
     }
-    
-    res.status(500).json({
-      success: false,
-      message: "Error getting bugs",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getFeatureBugs = async (req, res) => {
+export const getFeatureBugs = async (req, res, next) => {
   try {
     const { featureId } = req.params;
 
@@ -194,24 +140,14 @@ export const getFeatureBugs = async (req, res) => {
       data: bugs,
     });
   } catch (error) {
-    console.error("Get feature bugs error:", error);
-    
     if (error.message === "Feature not found") {
-      return res.status(404).json({
-        success: false,
-        message: "Feature not found",
-      });
+      return next(new NotFoundError("Feature not found"));
     }
-    
-    res.status(500).json({
-      success: false,
-      message: "Error getting bugs",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const updateBug = async (req, res) => {
+export const updateBug = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -224,31 +160,19 @@ export const updateBug = async (req, res) => {
       data: bug,
     });
   } catch (error) {
-    console.error("Update bug error:", error);
-    
     if (error.message === "Bug not found" || error.message === "Feature not found" || error.message === "Project not found") {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return next(new NotFoundError(error.message));
     }
     
     if (error.message.includes("Invalid status")) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return next(new BadRequestError(error.message));
     }
     
-    res.status(500).json({
-      success: false,
-      message: "Error updating bug",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const deleteBug = async (req, res) => {
+export const deleteBug = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -259,24 +183,14 @@ export const deleteBug = async (req, res) => {
       message: "Bug deleted successfully",
     });
   } catch (error) {
-    console.error("Delete bug error:", error);
-    
     if (error.message === "Bug not found") {
-      return res.status(404).json({
-        success: false,
-        message: "Bug not found",
-      });
+      return next(new NotFoundError("Bug not found"));
     }
-    
-    res.status(500).json({
-      success: false,
-      message: "Error deleting bug",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getBugStats = async (req, res) => {
+export const getBugStats = async (req, res, next) => {
   try {
     const { projectId } = req.params;
 
@@ -287,20 +201,10 @@ export const getBugStats = async (req, res) => {
       data: stats,
     });
   } catch (error) {
-    console.error("Get bug stats error:", error);
-    
     if (error.message === "Project not found") {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
+      return next(new NotFoundError("Project not found"));
     }
-    
-    res.status(500).json({
-      success: false,
-      message: "Error getting bug stats",
-      error: error.message,
-    });
+    next(error);
   }
 };
 

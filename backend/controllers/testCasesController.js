@@ -1,15 +1,13 @@
 import * as testCaseService from "../services/testCaseService.js";
 import { convertTestCaseToGherkin, convertTestCasesToGherkin } from "../services/testCaseService.js";
+import { BadRequestError, NotFoundError } from "../utils/AppError.js";
 
-export const createTestCase = async (req, res) => {
+export const createTestCase = async (req, res, next) => {
   try {
     const testCaseData = req.body;
 
     if (!testCaseData || !testCaseData.title || !testCaseData.steps) {
-      return res.status(400).json({
-        success: false,
-        message: "Title and steps are required",
-      });
+      return next(new BadRequestError("Title and steps are required"));
     }
 
     // featureId can be in body or params
@@ -18,10 +16,7 @@ export const createTestCase = async (req, res) => {
     }
 
     if (!testCaseData.featureId) {
-      return res.status(400).json({
-        success: false,
-        message: "Feature ID is required (in body or params)",
-      });
+      return next(new BadRequestError("Feature ID is required (in body or params)"));
     }
 
     const testCase = await testCaseService.createTestCase(testCaseData);
@@ -32,25 +27,17 @@ export const createTestCase = async (req, res) => {
       data: testCase,
     });
   } catch (error) {
-    console.error("Create test case error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error creating test case",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const createTestCaseForFeature = async (req, res) => {
+export const createTestCaseForFeature = async (req, res, next) => {
   try {
     const { featureId } = req.params;
     const testCaseData = { ...req.body, featureId };
 
     if (!testCaseData.title || !testCaseData.steps) {
-      return res.status(400).json({
-        success: false,
-        message: "Title and steps are required",
-      });
+      return next(new BadRequestError("Title and steps are required"));
     }
 
     const testCase = await testCaseService.createTestCase(testCaseData);
@@ -61,24 +48,14 @@ export const createTestCaseForFeature = async (req, res) => {
       data: testCase,
     });
   } catch (error) {
-    console.error("Create test case for feature error:", error);
-    
     if (error.message === "Feature not found") {
-      return res.status(404).json({
-        success: false,
-        message: "Feature not found",
-      });
+      return next(new NotFoundError("Feature not found"));
     }
-    
-    res.status(500).json({
-      success: false,
-      message: "Error creating test case",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getTestCase = async (req, res) => {
+export const getTestCase = async (req, res, next) => {
   try {
     const { id } = req.params;
     const testCase = await testCaseService.getTestCaseById(id);
@@ -110,17 +87,11 @@ export const getTestCase = async (req, res) => {
       data: testCase,
     });
   } catch (error) {
-    console.error("Get test case error:", error);
-    res.status(500).json({
-      success: false,
-      exists: false,
-      message: "Error getting test case",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const checkTestCaseExists = async (req, res) => {
+export const checkTestCaseExists = async (req, res, next) => {
   try {
     const { id } = req.params;
     const testCase = await testCaseService.getTestCaseById(id);
@@ -132,17 +103,11 @@ export const checkTestCaseExists = async (req, res) => {
       data: testCase || null,
     });
   } catch (error) {
-    console.error("Check test case exists error:", error);
-    res.status(500).json({
-      success: false,
-      exists: false,
-      message: "Error checking test case",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const checkHasAIGeneratedTestCases = async (req, res) => {
+export const checkHasAIGeneratedTestCases = async (req, res, next) => {
   try {
     const { featureId } = req.params;
     const hasAIGenerated = await testCaseService.hasAIGeneratedTestCases(featureId);
@@ -152,16 +117,11 @@ export const checkHasAIGeneratedTestCases = async (req, res) => {
       hasAIGenerated,
     });
   } catch (error) {
-    console.error("Check AI-generated test cases error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error checking AI-generated test cases",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getFeatureTestCases = async (req, res) => {
+export const getFeatureTestCases = async (req, res, next) => {
   try {
     const { featureId } = req.params;
     const testCases = await testCaseService.getFeatureTestCases(featureId);
@@ -172,16 +132,11 @@ export const getFeatureTestCases = async (req, res) => {
       data: testCases,
     });
   } catch (error) {
-    console.error("Get feature test cases error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error getting test cases",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getProjectTestCases = async (req, res) => {
+export const getProjectTestCases = async (req, res, next) => {
   try {
     const { projectId } = req.params;
     const { status, priority, featureId } = req.query;
@@ -199,52 +154,33 @@ export const getProjectTestCases = async (req, res) => {
       data: testCases,
     });
   } catch (error) {
-    console.error("Get project test cases error:", error);
-    
     if (error.message === "Project not found") {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
+      return next(new NotFoundError("Project not found"));
     }
-    
-    res.status(500).json({
-      success: false,
-      message: "Error getting test cases",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const updateTestCase = async (req, res) => {
+export const updateTestCase = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
     // Validate that updateData is provided
     if (!updateData || Object.keys(updateData).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Update data is required",
-      });
+      return next(new BadRequestError("Update data is required"));
     }
 
     const { testCaseId, _id, createdAt, __v, ...allowedUpdates } = updateData;
 
     if (Object.keys(allowedUpdates).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No valid fields to update",
-      });
+      return next(new BadRequestError("No valid fields to update"));
     }
 
     const testCase = await testCaseService.updateTestCase(id, allowedUpdates);
 
     if (!testCase) {
-      return res.status(404).json({
-        success: false,
-        message: "Test case not found",
-      });
+      return next(new NotFoundError("Test case not found"));
     }
 
     res.status(200).json({
@@ -253,34 +189,11 @@ export const updateTestCase = async (req, res) => {
       data: testCase,
     });
   } catch (error) {
-    console.error("Update test case error:", error);
-    
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: "Validation error",
-        error: error.message,
-        details: error.errors,
-      });
-    }
-
-    if (error.name === "CastError") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid ID format",
-        error: error.message,
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: "Error updating test case",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const deleteTestCase = async (req, res) => {
+export const deleteTestCase = async (req, res, next) => {
   try {
     const { id } = req.params;
     await testCaseService.deleteTestCase(id);
@@ -290,32 +203,14 @@ export const deleteTestCase = async (req, res) => {
       message: "Test case deleted successfully",
     });
   } catch (error) {
-    console.error("Delete test case error:", error);
-    
     if (error.message === "Test case not found" || error.message === "Test case not found or already deleted") {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return next(new NotFoundError(error.message));
     }
-    
-    if (error.name === "CastError") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid ID format",
-        error: error.message,
-      });
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: "Error deleting test case",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const generateTestCases = async (req, res) => {
+export const generateTestCases = async (req, res, next) => {
   try {
     const { featureId } = req.params;
     // Safely extract options from request body
@@ -330,24 +225,16 @@ export const generateTestCases = async (req, res) => {
       data: testCases,
     });
   } catch (error) {
-    console.error("Generate test cases error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error generating test cases",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const bulkCreateTestCases = async (req, res) => {
+export const bulkCreateTestCases = async (req, res, next) => {
   try {
     const { featureId, testCases } = req.body;
 
     if (!featureId || !Array.isArray(testCases) || testCases.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Feature ID and test cases array are required",
-      });
+      return next(new BadRequestError("Feature ID and test cases array are required"));
     }
 
     const createdTestCases = await testCaseService.bulkCreateTestCases(featureId, testCases);
@@ -359,26 +246,18 @@ export const bulkCreateTestCases = async (req, res) => {
       data: createdTestCases,
     });
   } catch (error) {
-    console.error("Bulk create test cases error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error bulk creating test cases",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const convertToGherkin = async (req, res) => {
+export const convertToGherkin = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { useAI = "true" } = req.query; // Default to AI enabled
     const testCase = await testCaseService.getTestCaseById(id);
 
     if (!testCase) {
-      return res.status(404).json({
-        success: false,
-        message: "Test case not found",
-      });
+      return next(new NotFoundError("Test case not found"));
     }
 
     // Get projectId from testCase (handle both populated and non-populated cases)
@@ -408,16 +287,11 @@ export const convertToGherkin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Convert to Gherkin error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error converting test case to Gherkin",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const convertFeatureTestCasesToGherkin = async (req, res) => {
+export const convertFeatureTestCasesToGherkin = async (req, res, next) => {
   try {
     const { featureId } = req.params;
     const { featureName } = req.query;
@@ -425,10 +299,7 @@ export const convertFeatureTestCasesToGherkin = async (req, res) => {
     const testCases = await testCaseService.getFeatureTestCases(featureId);
 
     if (!testCases || testCases.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No test cases found for this feature",
-      });
+      return next(new NotFoundError("No test cases found for this feature"));
     }
 
     const gherkin = convertTestCasesToGherkin(testCases, featureName || null);
@@ -443,11 +314,6 @@ export const convertFeatureTestCasesToGherkin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Convert feature test cases to Gherkin error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error converting test cases to Gherkin",
-      error: error.message,
-    });
+    next(error);
   }
 };

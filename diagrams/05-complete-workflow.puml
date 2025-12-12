@@ -1,0 +1,85 @@
+@startuml Complete Workflow
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 14
+skinparam defaultFontColor #0F2F6B
+skinparam roundcorner 10
+skinparam shadowing false
+skinparam Padding 12
+skinparam nodesep 40
+skinparam ranksep 30
+skinparam ArrowColor #1976D2
+skinparam ArrowThickness 2
+skinparam ArrowFontSize 13
+skinparam ArrowFontName "Arial"
+
+skinparam component {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontColor #0F2F6B
+    FontStyle bold
+}
+
+skinparam database {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontColor #0F2F6B
+    FontStyle bold
+}
+
+skinparam package {
+    BackgroundColor #FFFFFF
+    BorderColor #1976D2
+    FontColor #0F2F6B
+    FontStyle bold
+}
+
+title <b>Complete Workflow</b>\nEnd-to-End Process Flow
+
+left to right direction
+
+package "Project Setup" {
+    actor      "Step 1:\nCreate Project" as Step1
+    component  "Step 2:\nUpload SRS\nDocument\n(PDF/TXT)" as Step2 #E3F2FD
+    component  "Step 3:\nGoogle Document AI\nExtract Text\nTables & Forms" as Step3 #E3F2FD
+    component  "Step 4:\nText Splitter\nRecursiveCharacter\n2000 chars\n300 overlap" as Step4 #E3F2FD
+    component  "Step 5:\nChunking\nText Segments" as Step5 #E3F2FD
+    component  "Step 6:\nOpenAI API\ntext-embedding-3-small\nGenerate Embeddings" as Step6 #E3F2FD
+    database   "Step 7:\nSupabase\nVector Store\nStore Embeddings" as Step7 #E3F2FD
+    database   "Step 8:\nMongoDB\nUpdate Project\nprocessed: true" as Step8 #E3F2FD
+}
+
+package "Feature Extraction" {
+    component  "Step 9:\nRAG Service\nSimilarity Search\nExtract Features" as Step9 #E3F2FD
+    component  "Step 10:\nOpenAI API\nGPT-4o-mini\nGenerate Features\nJSON Response" as Step10 #E3F2FD
+    database   "Step 11:\nMongoDB\nSave Features\nwith Metadata" as Step11 #E3F2FD
+    database   "Step 12:\nSupabase\nAdd Features\nto Vector Store" as Step12 #E3F2FD
+}
+
+package "Test Case Generation" {
+    component  "Step 13:\nRAG Service\nSection Context\nGenerate Test Cases" as Step13 #E3F2FD
+    component  "Step 14:\nOpenAI API\nGPT-4o-mini\nJSON Mode\nGenerate Test Cases" as Step14 #E3F2FD
+    database   "Step 15:\nMongoDB\nSave Test Cases\nwith Gherkin" as Step15 #E3F2FD
+    database   "Step 16:\nSupabase\nAdd Test Cases\nto Vector Store" as Step16 #E3F2FD
+}
+
+Step1 --> Step2 : 1. Create Project
+Step2 --> Step3 : 2. Upload SRS File\n(PDF or TXT)
+Step3 --> Step4 : 3. Extracted Text\n(Full Document)
+Step4 --> Step5 : 4. Split Documents
+Step5 --> Step6 : 5. Text Chunks\n(2000 chars each)
+Step6 --> Step7 : 6. Embeddings\n(1536-dim vectors)
+Step7 --> Step8 : 7. Save Embeddings\nUpdate Project
+
+Step8 --> Step9  : 8. Request Features\nfrom SRS
+Step7 --> Step9  : 9. Similarity Search\nRetrieve Context
+Step9 --> Step10 : 10. Context + Query\nAugmented Prompt
+Step10 --> Step11: 11. Features JSON\nResponse
+Step10 --> Step12: 12. Add Features\nto Vector Store
+
+Step11 --> Step13: 13. Select Feature\nfor Test Cases
+Step7  --> Step13: 14. Section Context\nfrom Matched Sections
+Step13 --> Step14: 15. Context + Feature\nAugmented Prompt
+Step14 --> Step15: 16. Test Cases JSON\nwith Gherkin
+Step14 --> Step16: 17. Add Test Cases\nto Vector Store
+
+@enduml

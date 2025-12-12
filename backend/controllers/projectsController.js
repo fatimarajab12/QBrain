@@ -2,6 +2,7 @@ import * as projectService from "../services/projectService.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { BadRequestError, NotFoundError, ForbiddenError, ConflictError } from "../utils/AppError.js";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -31,24 +32,18 @@ export const upload = multer({
   },
 });
 
-export const createProject = async (req, res) => {
+export const createProject = async (req, res, next) => {
   try {
     const { name, description, status } = req.body;
     // Use authenticated user ID from middleware
     const userId = req.user?._id || req.userId || req.body.userId;
 
     if (!name) {
-      return res.status(400).json({
-        success: false,
-        message: "Project name is required",
-      });
+      return next(new BadRequestError("Project name is required"));
     }
 
     if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID is required. Please ensure you are authenticated.",
-      });
+      return next(new BadRequestError("User ID is required. Please ensure you are authenticated."));
     }
 
     const project = await projectService.createProject({
@@ -64,25 +59,17 @@ export const createProject = async (req, res) => {
       data: project,
     });
   } catch (error) {
-    console.error("Create project error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error creating project",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getProject = async (req, res) => {
+export const getProject = async (req, res, next) => {
   try {
     const { id } = req.params;
     const project = await projectService.getProjectById(id);
 
     if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
+      return next(new NotFoundError("Project not found"));
     }
 
     res.status(200).json({
@@ -90,25 +77,17 @@ export const getProject = async (req, res) => {
       data: project,
     });
   } catch (error) {
-    console.error("Get project error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error getting project",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getUserProjects = async (req, res) => {
+export const getUserProjects = async (req, res, next) => {
   try {
     // Use authenticated user ID from middleware
     const userId = req.user?._id || req.userId || req.query.userId;
 
     if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID is required. Please ensure you are authenticated.",
-      });
+      return next(new BadRequestError("User ID is required. Please ensure you are authenticated."));
     }
 
     const projects = await projectService.getUserProjects(userId);
@@ -119,16 +98,11 @@ export const getUserProjects = async (req, res) => {
       data: projects,
     });
   } catch (error) {
-    console.error("Get user projects error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error getting projects",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const updateProject = async (req, res) => {
+export const updateProject = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -136,10 +110,7 @@ export const updateProject = async (req, res) => {
     const project = await projectService.updateProject(id, updateData);
 
     if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
+      return next(new NotFoundError("Project not found"));
     }
 
     res.status(200).json({
@@ -148,16 +119,11 @@ export const updateProject = async (req, res) => {
       data: project,
     });
   } catch (error) {
-    console.error("Update project error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating project",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const deleteProject = async (req, res) => {
+export const deleteProject = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user?._id || req.userId;
@@ -165,10 +131,7 @@ export const deleteProject = async (req, res) => {
     // Verify that the project belongs to the authenticated user
     const project = await projectService.getProjectById(id);
     if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
+      return next(new NotFoundError("Project not found"));
     }
 
     // Check if user owns the project
@@ -176,10 +139,7 @@ export const deleteProject = async (req, res) => {
     const currentUserId = userId?.toString();
     
     if (projectUserId !== currentUserId) {
-      return res.status(403).json({
-        success: false,
-        message: "You don't have permission to delete this project",
-      });
+      return next(new ForbiddenError("You don't have permission to delete this project"));
     }
 
     await projectService.deleteProject(id);
@@ -189,16 +149,11 @@ export const deleteProject = async (req, res) => {
       message: "Project deleted successfully",
     });
   } catch (error) {
-    console.error("Delete project error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error deleting project",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const uploadSRS = async (req, res) => {
+export const uploadSRS = async (req, res, next) => {
 
   try {
     const { id } = req.params;
@@ -207,10 +162,7 @@ export const uploadSRS = async (req, res) => {
     console.log("Body Object:", req.body);
 
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded",
-      });
+      return next(new BadRequestError("No file uploaded"));
     }
 
     const result = await projectService.uploadAndProcessSRS(
@@ -225,20 +177,15 @@ export const uploadSRS = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Upload SRS error:", error);
-    
     // Check if error is about existing SRS document
-    const statusCode = error.message.includes("already uploaded") ? 409 : 500;
-    
-    res.status(statusCode).json({
-      success: false,
-      message: error.message || "Error processing SRS document",
-      error: error.message,
-    });
+    if (error.message && error.message.includes("already uploaded")) {
+      return next(new ConflictError(error.message));
+    }
+    next(error);
   }
 };
 
-export const getProjectStats = async (req, res) => {
+export const getProjectStats = async (req, res, next) => {
   try {
     const { id } = req.params;
     const stats = await projectService.getProjectStats(id);
@@ -248,16 +195,11 @@ export const getProjectStats = async (req, res) => {
       data: stats,
     });
   } catch (error) {
-    console.error("Get project stats error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error getting project statistics",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getTestCasesCount = async (req, res) => {
+export const getTestCasesCount = async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await projectService.getTestCasesCount(id);
@@ -267,19 +209,9 @@ export const getTestCasesCount = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Get test cases count error:", error);
-    
     if (error.message === "Project not found") {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return next(new NotFoundError(error.message));
     }
-
-    res.status(500).json({
-      success: false,
-      message: "Error getting test cases count",
-      error: error.message,
-    });
+    next(error);
   }
 };

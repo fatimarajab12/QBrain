@@ -58,6 +58,38 @@ export async function createFeature(featureData) {
       restFeatureData.priority = normalizePriority(restFeatureData.priority);
     }
     
+    // Check if feature with same name already exists in the project
+    if (restFeatureData.projectId && restFeatureData.name) {
+      const existingFeature = await Feature.findOne({
+        projectId: restFeatureData.projectId,
+        name: restFeatureData.name.trim()
+      });
+      
+      if (existingFeature) {
+        // If it's an AI-generated feature and we're trying to create another one with same name,
+        // append a suffix to make it unique
+        if (restFeatureData.isAIGenerated && existingFeature.isAIGenerated) {
+          let counter = 1;
+          let newName = `${restFeatureData.name.trim()} (${counter})`;
+          
+          // Keep checking until we find a unique name
+          while (await Feature.findOne({ 
+            projectId: restFeatureData.projectId, 
+            name: newName 
+          })) {
+            counter++;
+            newName = `${restFeatureData.name.trim()} (${counter})`;
+          }
+          
+          restFeatureData.name = newName;
+          console.log(`Feature name "${restFeatureData.name.trim()}" already exists. Using "${newName}" instead.`);
+        } else {
+          // For manual features or when trying to create manual feature with existing name
+          throw new Error(`A feature with the name "${restFeatureData.name.trim()}" already exists in this project. Please use a different name or update the existing feature.`);
+        }
+      }
+    }
+    
     const feature = new Feature({
       ...restFeatureData,
     });
@@ -418,39 +450,75 @@ export async function generateFeaturesFromSRS(projectId, options = {}) {
       : generatedFeaturesResult.features || [];
 
     const savedFeatures = [];
+    const skippedFeatures = [];
+    
     for (const featureData of generatedFeatures) {
-      // Extract ranking and explanation data before saving
-      const {
-        relevanceScore,
-        rankingScore,
-        matchedChunksCount,
-        reasoning,
-        matchedSections,
-        confidence,
-        ...featureFields
-      } = featureData;
-
-      // Normalize priority before creating feature
-      const normalizedFeatureFields = {
-        ...featureFields,
-        priority: featureFields.priority ? normalizePriority(featureFields.priority) : "Medium",
-      };
-      
-      const feature = await createFeature({
-        ...normalizedFeatureFields,
-        projectId: id,
-        isAIGenerated: true,
-        aiGenerationContext: JSON.stringify({
-          ...options,
+      try {
+        // Extract ranking and explanation data before saving
+        const {
           relevanceScore,
           rankingScore,
           matchedChunksCount,
-        }),
-        reasoning: reasoning || null,
-        matchedSections: matchedSections || [],
-        confidence: confidence || null,
-      });
-      savedFeatures.push(feature);
+          reasoning,
+          matchedSections,
+          confidence,
+          ...featureFields
+        } = featureData;
+
+        // Normalize priority before creating feature
+        const normalizedFeatureFields = {
+          ...featureFields,
+          priority: featureFields.priority ? normalizePriority(featureFields.priority) : "Medium",
+        };
+        
+        // Check if feature with same name already exists (for AI-generated features, we'll add suffix)
+        const existingFeature = await Feature.findOne({
+          projectId: id,
+          name: normalizedFeatureFields.name?.trim()
+        });
+        
+        if (existingFeature && !existingFeature.isAIGenerated) {
+          // Skip if manual feature exists with same name
+          skippedFeatures.push({
+            name: normalizedFeatureFields.name,
+            reason: "A manual feature with this name already exists"
+          });
+          console.log(`Skipping feature "${normalizedFeatureFields.name}" - manual feature with same name exists`);
+          continue;
+        }
+        
+        const feature = await createFeature({
+          ...normalizedFeatureFields,
+          projectId: id,
+          isAIGenerated: true,
+          aiGenerationContext: JSON.stringify({
+            ...options,
+            relevanceScore,
+            rankingScore,
+            matchedChunksCount,
+          }),
+          reasoning: reasoning || null,
+          matchedSections: matchedSections || [],
+          confidence: confidence || null,
+        });
+        savedFeatures.push(feature);
+      } catch (error) {
+        // If it's a duplicate key error, log and continue
+        if (error.code === 11000 || error.message.includes("already exists")) {
+          skippedFeatures.push({
+            name: featureData.name,
+            reason: error.message || "Duplicate feature name"
+          });
+          console.log(`Skipping duplicate feature "${featureData.name}":`, error.message);
+          continue;
+        }
+        // For other errors, re-throw to stop the process
+        throw error;
+      }
+    }
+    
+    if (skippedFeatures.length > 0) {
+      console.log(`Skipped ${skippedFeatures.length} duplicate features:`, skippedFeatures);
     }
 
     return savedFeatures;

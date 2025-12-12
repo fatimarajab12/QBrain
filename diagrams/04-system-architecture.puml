@@ -1,0 +1,91 @@
+@startuml System Architecture
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 14
+skinparam defaultFontColor #0F2F6B
+skinparam roundcorner 10
+skinparam shadowing false
+skinparam Padding 12
+skinparam nodesep 35
+skinparam ranksep 28
+skinparam ArrowColor #1976D2
+skinparam ArrowThickness 2
+skinparam ArrowFontSize 13
+skinparam ArrowFontName "Arial"
+
+skinparam component {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontColor #0F2F6B
+    FontStyle bold
+}
+
+skinparam database {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontColor #0F2F6B
+    FontStyle bold
+}
+
+skinparam cloud {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontColor #0F2F6B
+    FontStyle bold
+}
+
+skinparam package {
+    BackgroundColor #FFFFFF
+    BorderColor #1976D2
+    FontColor #0F2F6B
+    FontStyle bold
+}
+
+title <b>QBrain System Architecture</b>\nComplete System Overview
+
+top to bottom direction
+
+package "Frontend Layer" {
+    component "Frontend\nReact 18 + TypeScript\nTailwind CSS" as Frontend #E3F2FD
+}
+
+package "Backend Layer" {
+    component "Backend API\nExpress.js\nNode.js" as Backend #E3F2FD
+    
+    package "AI Services" {
+        component "RAG Service\nFeature Extraction\nTest Case Generation\nQuery Processing" as RAG #E3F2FD
+        component "Text Splitter\nRecursiveCharacter\n2000 chars\n300 overlap" as Splitter #E3F2FD
+        component "Chunking\nText Segments" as Chunking #E3F2FD
+    }
+}
+
+package "Data Storage" {
+    database "MongoDB\nProjects\nFeatures\nTest Cases" as MongoDB #E3F2FD
+    database "Supabase\nVector DB\n(pgvector)\nEmbeddings" as Supabase #E3F2FD
+    component "File System\nSRS Documents\n(uploads folder)" as FileStore #E3F2FD
+}
+
+package "External Services" {
+    cloud "OpenAI API\nGPT-4o-mini\nFeature & Test Case\nGeneration" as OpenAI_LLM #E3F2FD
+    cloud "OpenAI API\ntext-embedding-3-small\n1536 dimensions" as OpenAI_EMB #E3F2FD
+    cloud "Google Document AI\nPDF Processing\nOCR & Tables\nForms Extraction" as DocAI #E3F2FD
+}
+
+Frontend --> Backend : HTTP/REST API
+
+Backend --> FileStore : Upload SRS
+Backend --> DocAI : Process PDF
+DocAI --> Splitter : Extracted Text
+Splitter --> Chunking : Split Documents
+Chunking --> OpenAI_EMB : Text Chunks
+OpenAI_EMB --> Supabase : Embeddings
+
+Backend --> RAG : Feature Extraction\nTest Case Generation
+RAG --> Supabase : Similarity Search
+RAG --> OpenAI_LLM : LLM Calls
+RAG --> OpenAI_EMB : Query Embeddings
+
+Backend --> MongoDB : CRUD Operations
+RAG --> MongoDB : Save Features/Test Cases
+RAG --> Supabase : Add to Vector Store
+
+@enduml

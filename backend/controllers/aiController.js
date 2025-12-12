@@ -1,15 +1,13 @@
 import { queryRAG, getRAGContext, analyzeSectionMatching } from "../ai/ragService.js";
 import { vectorStore } from "../vector/vectorStore.js";
+import { BadRequestError } from "../utils/AppError.js";
 
-export const queryAI = async (req, res) => {
+export const queryAI = async (req, res, next) => {
   try {
     const { projectId, question } = req.body;
 
     if (!projectId || !question) {
-      return res.status(400).json({
-        success: false,
-        message: "Project ID and question are required",
-      });
+      return next(new BadRequestError("Project ID and question are required"));
     }
     const nResults = req.body.nResults || 5;
     const response = await queryRAG(projectId, question, nResults);
@@ -23,24 +21,16 @@ export const queryAI = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("AI query error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error querying AI",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getContext = async (req, res) => {
+export const getContext = async (req, res, next) => {
   try {
     const { projectId, query } = req.body;
 
     if (!projectId || !query) {
-      return res.status(400).json({
-        success: false,
-        message: "Project ID and query are required",
-      });
+      return next(new BadRequestError("Project ID and query are required"));
     }
 
     const nResults = req.body.nResults || 5;
@@ -55,16 +45,11 @@ export const getContext = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get context error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error getting context",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getVectorInfo = async (req, res) => {
+export const getVectorInfo = async (req, res, next) => {
   try {
     const { projectId } = req.params;
 
@@ -94,24 +79,16 @@ export const getVectorInfo = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get vector info error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error getting vector info",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const analyzeSections = async (req, res) => {
+export const analyzeSections = async (req, res, next) => {
   try {
     const { projectId, section1Query, section2Query, section1Name, section2Name, nContextChunks, model } = req.body;
 
     if (!projectId || !section1Query || !section2Query) {
-      return res.status(400).json({
-        success: false,
-        message: "Project ID, section1Query, and section2Query are required",
-      });
+      return next(new BadRequestError("Project ID, section1Query, and section2Query are required"));
     }
 
     const options = {
@@ -133,11 +110,6 @@ export const analyzeSections = async (req, res) => {
       data: analysis,
     });
   } catch (error) {
-    console.error("Section matching analysis error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error analyzing section matching",
-      error: error.message,
-    });
+    next(error);
   }
 };

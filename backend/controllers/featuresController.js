@@ -1,14 +1,12 @@
 import * as featureService from "../services/featureService.js";
+import { BadRequestError, NotFoundError } from "../utils/AppError.js";
 
-export const createFeature = async (req, res) => {
+export const createFeature = async (req, res, next) => {
   try {
     const featureData = req.body;
 
     if (!featureData.name || !featureData.projectId) {
-      return res.status(400).json({
-        success: false,
-        message: "Feature name and project ID are required",
-      });
+      return next(new BadRequestError("Feature name and project ID are required"));
     }
 
     const feature = await featureService.createFeature(featureData);
@@ -19,25 +17,17 @@ export const createFeature = async (req, res) => {
       data: feature,
     });
   } catch (error) {
-    console.error("Create feature error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error creating feature",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getFeature = async (req, res) => {
+export const getFeature = async (req, res, next) => {
   try {
     const { id } = req.params;
     const feature = await featureService.getFeatureById(id);
 
     if (!feature) {
-      return res.status(404).json({
-        success: false,
-        message: "Feature not found",
-      });
+      return next(new NotFoundError("Feature not found"));
     }
 
     res.status(200).json({
@@ -45,16 +35,11 @@ export const getFeature = async (req, res) => {
       data: feature,
     });
   } catch (error) {
-    console.error("Get feature error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error getting feature",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getProjectFeatures = async (req, res) => {
+export const getProjectFeatures = async (req, res, next) => {
   try {
     const { projectId } = req.params;
     
@@ -63,10 +48,7 @@ export const getProjectFeatures = async (req, res) => {
     }
     
     if (!projectId) {
-      return res.status(400).json({
-        success: false,
-        message: "Project ID is required",
-      });
+      return next(new BadRequestError("Project ID is required"));
     }
     
     const features = await featureService.getProjectFeatures(projectId);
@@ -77,32 +59,20 @@ export const getProjectFeatures = async (req, res) => {
       data: features,
     });
   } catch (error) {
-    console.error("Get project features error:", error);
-    
     // Handle specific error cases
     if (error.message === "Project not found") {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
+      return next(new NotFoundError("Project not found"));
     }
     
     if (error.message.includes("Invalid") || error.message.includes("required")) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return next(new BadRequestError(error.message));
     }
     
-    res.status(500).json({
-      success: false,
-      message: "Error getting features",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const updateFeature = async (req, res) => {
+export const updateFeature = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -110,10 +80,7 @@ export const updateFeature = async (req, res) => {
     const feature = await featureService.updateFeature(id, updateData);
 
     if (!feature) {
-      return res.status(404).json({
-        success: false,
-        message: "Feature not found",
-      });
+      return next(new NotFoundError("Feature not found"));
     }
 
     res.status(200).json({
@@ -122,16 +89,11 @@ export const updateFeature = async (req, res) => {
       data: feature,
     });
   } catch (error) {
-    console.error("Update feature error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating feature",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const deleteFeature = async (req, res) => {
+export const deleteFeature = async (req, res, next) => {
   try {
     const { id } = req.params;
     await featureService.deleteFeature(id);
@@ -141,16 +103,11 @@ export const deleteFeature = async (req, res) => {
       message: "Feature deleted successfully",
     });
   } catch (error) {
-    console.error("Delete feature error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error deleting feature",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const generateFeatures = async (req, res) => {
+export const generateFeatures = async (req, res, next) => {
   try {
     const { projectId } = req.params;
     // Safely extract options from request body
@@ -165,16 +122,11 @@ export const generateFeatures = async (req, res) => {
       data: features,
     });
   } catch (error) {
-    console.error("Generate features error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error generating features",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const checkHasAIGeneratedFeatures = async (req, res) => {
+export const checkHasAIGeneratedFeatures = async (req, res, next) => {
   try {
     const { projectId } = req.params;
     const hasAIGenerated = await featureService.hasAIGeneratedFeatures(projectId);
@@ -184,24 +136,16 @@ export const checkHasAIGeneratedFeatures = async (req, res) => {
       hasAIGenerated,
     });
   } catch (error) {
-    console.error("Check AI-generated features error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error checking AI-generated features",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const bulkCreateFeatures = async (req, res) => {
+export const bulkCreateFeatures = async (req, res, next) => {
   try {
     const { projectId, features } = req.body;
 
     if (!projectId || !Array.isArray(features) || features.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Project ID and features array are required",
-      });
+      return next(new BadRequestError("Project ID and features array are required"));
     }
 
     const createdFeatures = await featureService.bulkCreateFeatures(projectId, features);
@@ -254,16 +198,11 @@ export const bulkCreateFeatures = async (req, res) => {
       data: createdFeatures,
     });
   } catch (error) {
-    console.error("Bulk create features error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error bulk creating features",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getPerformanceMetrics = async (req, res) => {
+export const getPerformanceMetrics = async (req, res, next) => {
   try {
     const { projectId } = req.params;
     
@@ -319,16 +258,11 @@ export const getPerformanceMetrics = async (req, res) => {
       data: metrics,
     });
   } catch (error) {
-    console.error("Get performance metrics error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error getting performance metrics",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getTestCasesCount = async (req, res) => {
+export const getTestCasesCount = async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await featureService.getTestCasesCount(id);
@@ -338,19 +272,9 @@ export const getTestCasesCount = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Get test cases count error:", error);
-    
     if (error.message === "Feature not found") {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return next(new NotFoundError(error.message));
     }
-
-    res.status(500).json({
-      success: false,
-      message: "Error getting test cases count",
-      error: error.message,
-    });
+    next(error);
   }
 };

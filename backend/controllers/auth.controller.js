@@ -4,29 +4,20 @@ import { emailService } from "../utils/emailService.js";
 import { customAlphabet } from 'nanoid';
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import { BadRequestError, NotFoundError, UnauthorizedError, ForbiddenError } from "../utils/AppError.js";
 
-export const Signup = async (req, res) => {
+export const Signup = async (req, res, next) => {
   const { name, email, password } = req.body;
   let newUser;
 
   try {
     if (!name || !email || !password) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Name, email, and password are required",
-        });
+      return next(new BadRequestError("Name, email, and password are required"));
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "User already exists with this email",
-        });
+      return next(new BadRequestError("User already exists with this email"));
     }
 
     newUser = new User({ name, email, password });
@@ -83,24 +74,15 @@ export const Signup = async (req, res) => {
     if (newUser && newUser._id) {
       await User.deleteOne({ _id: newUser._id });
     }
-    console.error("Signup error:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Server error during signup",
-        error: error.message,
-      });
+    next(error);
   }
 };
 
-export const verifyEmail = async (req, res) => {
+export const verifyEmail = async (req, res, next) => {
   try {
     const { token } = req.query;
     if (!token) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Token is missing" });
+      return next(new BadRequestError("Token is missing"));
     }
 
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
@@ -111,9 +93,7 @@ export const verifyEmail = async (req, res) => {
     });
 
     if (!user) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid or expired token" });
+      return next(new BadRequestError("Invalid or expired token"));
     }
 
     user.isVerified = true;
@@ -127,47 +107,34 @@ export const verifyEmail = async (req, res) => {
       .status(200)
       .json({ success: true, message: "Email verified successfully!" });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    next(err);
   }
 };
 
-export const Signin = async (req, res) => {
+export const Signin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
     // Validation
     if (!email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Email and password are required" 
-      });
+      return next(new BadRequestError("Email and password are required"));
     }
 
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Invalid email or password" 
-      });
+      return next(new UnauthorizedError("Invalid email or password"));
     }
 
     // Check if email is verified
     if (!user.isVerified) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Please verify your email before signing in. Check your inbox for the verification link." 
-      });
+      return next(new ForbiddenError("Please verify your email before signing in. Check your inbox for the verification link."));
     }
 
     // Validate password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Invalid email or password" 
-      });
+      return next(new UnauthorizedError("Invalid email or password"));
     }
 
     // Update login stats
@@ -200,25 +167,21 @@ export const Signin = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Signin error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred during signin. Please try again later.",
-    });
+    next(error);
   }
 };
 
-export const forgetPassword = async (req, res) => {
+export const forgetPassword = async (req, res, next) => {
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ success: false, message: "Email is required" });
+    return next(new BadRequestError("Email is required"));
   }
 
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return next(new NotFoundError("User not found"));
     }
 
     const code = customAlphabet("0123456789", 4)();
@@ -236,33 +199,32 @@ export const forgetPassword = async (req, res) => {
       testCode: code,
     });
   } catch (err) {
-    console.error("ForgetPassword error:", err);
-    return res.status(500).json({ success: false, message: "Server error", error: err.message });
+    next(err);
   }
 };
 
-export const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res, next) => {
   const { email, code, newPassword, confirmPassword } = req.body;
 
   if (!email || !code || !newPassword || !confirmPassword) {
-    return res.status(400).json({ success: false, message: "All fields are required" });
+    return next(new BadRequestError("All fields are required"));
   }
 
   if (newPassword !== confirmPassword) {
-    return res.status(400).json({ success: false, message: "Passwords do not match" });
+    return next(new BadRequestError("Passwords do not match"));
   }
 
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return next(new NotFoundError("User not found"));
     }
 
     const codeString = code.toString().padStart(4, "0");
     const hashedCode = crypto.createHash("sha256").update(codeString).digest("hex");
 
     if (!user.passwordResetToken || user.passwordResetToken !== hashedCode || user.passwordResetExpires < Date.now()) {
-      return res.status(400).json({ success: false, message: "Invalid or expired reset code" });
+      return next(new BadRequestError("Invalid or expired reset code"));
     }
 
     // Set password directly - the pre-save hook will hash it automatically
@@ -274,8 +236,7 @@ export const resetPassword = async (req, res) => {
 
     return res.status(200).json({ success: true, message: "Password reset successfully" });
   } catch (err) {
-    console.error("ResetPassword error:", err);
-    return res.status(500).json({ success: false, message: "Server error", error: err.message });
+    next(err);
   }
 };
 export const Logout = (req, res) => {
@@ -283,37 +244,33 @@ export const Logout = (req, res) => {
   res.status(200).json({ success: true, message: "Logged out successfully" });
 };
 
-export const deleteUserByEmail = async (req, res) => {
+export const deleteUserByEmail = async (req, res, next) => {
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ success: false, message: "Email is required" });
+    return next(new BadRequestError("Email is required"));
   }
 
   try {
     const user = await User.findOneAndDelete({ email });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return next(new NotFoundError("User not found"));
     }
 
     return res.status(200).json({ success: true, message: "User deleted successfully" });
   } catch (err) {
-    console.error("DeleteUserByEmail error:", err);
-    return res.status(500).json({ success: false, message: "Server error", error: err.message });
+    next(err);
   }
 };
 
-export const getProfile = async (req, res) => {
+export const getProfile = async (req, res, next) => {
   try {
     // User is attached by authenticate middleware
     const user = req.user;
 
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "User not found" 
-      });
+      return next(new NotFoundError("User not found"));
     }
 
     return res.status(200).json({
@@ -331,25 +288,17 @@ export const getProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Get profile error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error getting profile",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const updateProfile = async (req, res) => {
+export const updateProfile = async (req, res, next) => {
   try {
     const user = req.user;
     const { name, email } = req.body;
 
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "User not found" 
-      });
+      return next(new NotFoundError("User not found"));
     }
 
     // Update allowed fields
@@ -361,10 +310,7 @@ export const updateProfile = async (req, res) => {
       // Check if email is already taken
       const existingUser = await User.findOne({ email });
       if (existingUser && existingUser._id.toString() !== user._id.toString()) {
-        return res.status(400).json({
-          success: false,
-          message: "Email is already taken",
-        });
+        return next(new BadRequestError("Email is already taken"));
       }
       user.email = email;
       user.isVerified = false; // Require re-verification if email changes
@@ -387,11 +333,6 @@ export const updateProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Update profile error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error updating profile",
-      error: error.message,
-    });
+    next(error);
   }
 };
