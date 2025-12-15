@@ -1,13 +1,13 @@
 import mongoose from "mongoose";
 import { Project } from "../models/Project.js";
 import { vectorStore } from "../vector/vectorStore.js";
-import { generateEmbeddingsBatch } from "../ai/embeddings.js";
+import { generateEmbeddingsBatch } from "../ai/ingestion/embeddings.js";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { Document } from "@langchain/core/documents";
 import fs from "fs";
 import * as featureService from "./featureService.js";
 import * as testCaseService from "./testCaseService.js";
-import { parsePDFWithDocumentAI, isDocumentAIConfigured } from "./documentAIService.js";
+import { parsePDFWithDocumentAI, isDocumentAIConfigured } from "../ai/ingestion/documentParser.js";
 
 
 function validateObjectId(id, fieldName = "ID") {

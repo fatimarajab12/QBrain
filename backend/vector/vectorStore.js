@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { getEmbeddings } from "../ai/embeddings.js";
+import { getEmbeddings } from "../ai/ingestion/embeddings.js";
 import { Document } from "@langchain/core/documents";
 
 class VectorStore {
@@ -237,7 +237,7 @@ class VectorStore {
       // Generate embedding if not provided
       let embedding = newEmbedding;
       if (!embedding && newContent) {
-        const { generateEmbedding } = await import("../ai/embeddings.js");
+        const { generateEmbedding } = await import("../ai/ingestion/embeddings.js");
         embedding = await generateEmbedding(newContent);
       }
 
@@ -296,7 +296,7 @@ class VectorStore {
       // Generate embedding if not provided
       let finalEmbedding = embedding;
       if (!finalEmbedding && document.pageContent) {
-        const { generateEmbedding } = await import("../ai/embeddings.js");
+        const { generateEmbedding } = await import("../ai/ingestion/embeddings.js");
         finalEmbedding = await generateEmbedding(document.pageContent);
       }
 

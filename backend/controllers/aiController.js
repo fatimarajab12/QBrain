@@ -1,4 +1,4 @@
-import { queryRAG, getRAGContext, analyzeSectionMatching } from "../ai/ragService.js";
+import { queryRAG, getRAGContext, analyzeSectionMatching } from "../ai/rag/index.js";
 import { vectorStore } from "../vector/vectorStore.js";
 import { BadRequestError } from "../utils/AppError.js";
 

@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Feature } from "../models/Feature.js";
 import { Project } from "../models/Project.js";
-import { generateFeaturesFromRAG } from "../ai/ragService.js";
+import { generateFeaturesFromRAG } from "../ai/rag/index.js";
 import { vectorStore } from "../vector/vectorStore.js";
 import { Document } from "@langchain/core/documents";
 

@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { TestCase } from "../models/TestCase.js";
 import { Feature } from "../models/Feature.js";
 import { Project } from "../models/Project.js";
-import { generateTestCasesFromRAG, convertTestCaseToGherkinWithAI } from "../ai/ragService.js";
+import { generateTestCasesFromRAG, convertTestCaseToGherkinWithAI } from "../ai/rag/index.js";
 import { vectorStore } from "../vector/vectorStore.js";
 import { Document } from "@langchain/core/documents";
 
