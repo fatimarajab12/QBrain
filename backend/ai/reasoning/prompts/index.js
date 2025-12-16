@@ -6,13 +6,9 @@
  * re-exports from here so both old and new paths keep working.
  */
 
-/**
- * Creates adaptive prompt based on SRS type
- * @param {Object} srsType - Detected SRS type information
- * @returns {string} Adaptive prompt template
- */
-export function createAdaptivePrompt(srsType) {
-  const baseRules = `
+// ===== Feature Extraction Prompt Pieces =====
+
+const BASE_EXTRACTION_RULES = `
 **EXTRACTION RULES:**
 1. Extract features ONLY from what is written in the SRS text
 2. Use the EXACT wording from SRS when possible
@@ -24,8 +20,8 @@ export function createAdaptivePrompt(srsType) {
 8. Be thorough - extract ALL features, no matter how small or seemingly insignificant
 `;
 
-  const typeSpecificGuidance = {
-    IEEE_830: `
+const TYPE_SPECIFIC_EXTRACTION_GUIDANCE = {
+  IEEE_830: `
 **IEEE 830 SPECIFIC GUIDANCE:**
 - Focus on sections: 3.1 (Introduction), 3.2 (Overall Description), 3.3 (Specific Requirements)
 - Look for functional requirements in section 3.3
@@ -33,7 +29,7 @@ export function createAdaptivePrompt(srsType) {
 - Identify interface requirements (user, hardware, software)
 - Note quality attributes (performance, security, usability)
 `,
-    AGILE: `
+  AGILE: `
 **AGILE SPECIFIC GUIDANCE:**
 - Extract User Stories in format: "As a [role], I want [feature], So that [benefit]"
 - Look for Acceptance Criteria for each story
@@ -41,7 +37,7 @@ export function createAdaptivePrompt(srsType) {
 - Extract features from story descriptions
 - Note story priorities and dependencies
 `,
-    ENERGY: `
+  ENERGY: `
 **ENERGY DOMAIN SPECIFIC GUIDANCE:**
 - Focus on energy-related requirements (voltage, power, consumption)
 - Extract meter reading and billing features
@@ -49,7 +45,7 @@ export function createAdaptivePrompt(srsType) {
 - Look for energy monitoring and reporting features
 - Note technical specifications (voltage levels, capacity)
 `,
-    ENTERPRISE: `
+  ENTERPRISE: `
 **ENTERPRISE SPECIFIC GUIDANCE:**
 - Extract Business Requirements and Business Rules
 - Identify Stakeholder needs and expectations
@@ -57,9 +53,9 @@ export function createAdaptivePrompt(srsType) {
 - Extract integration requirements with other systems
 - Note organizational and compliance requirements
 `,
-  };
+};
 
-  const featureTypesGuidance = `
+const FEATURE_TYPES_EXTRACTION_GUIDANCE = `
 **FEATURE TYPES TO EXTRACT:**
 - FUNCTIONAL: System functions, user actions, use cases
 - DATA: Data models, tables, dictionaries, data structures (group related fields into one feature, do NOT create one feature per simple field)
@@ -71,10 +67,7 @@ export function createAdaptivePrompt(srsType) {
 - WORKFLOW: Workflows, business processes, procedures, steps
 `;
 
-  return `${baseRules}
-${typeSpecificGuidance[srsType.type] || typeSpecificGuidance.IEEE_830}
-${featureTypesGuidance}
-
+export const FEATURE_EXTRACTION_FOOTER = `
 **WHAT TO EXTRACT:**
 - Every functional requirement mentioned (even brief ones)
 - Every use case or user action described
@@ -136,18 +129,35 @@ For each extracted feature, provide:
 - Before finishing, review your list and merge any atomic data fields into a single data model feature instead of separate features
 
 **IMPORTANT: Return ONLY a valid JSON array, no markdown, no explanations. Start with [ and end with ].**`;
+
+/**
+ * Creates adaptive prompt based on SRS type
+ * @param {Object} srsType - Detected SRS type information
+ * @returns {string} Adaptive prompt template
+ */
+export function createAdaptivePrompt(srsType) {
+  const typeGuidance =
+    TYPE_SPECIFIC_EXTRACTION_GUIDANCE[srsType.type] ||
+    TYPE_SPECIFIC_EXTRACTION_GUIDANCE.IEEE_830;
+
+  return `${BASE_EXTRACTION_RULES}
+${typeGuidance}
+${FEATURE_TYPES_EXTRACTION_GUIDANCE}
+${FEATURE_EXTRACTION_FOOTER}`;
 }
 
-export function createTestCasePromptByFeatureType(featureType, matchedSections = []) {
-  const sectionContext =
-    matchedSections.length > 0
-      ? `\n**SRS Sections to Reference:** ${matchedSections.join(
-          ", "
-        )}\nUse information from these specific sections when building test cases.`
-      : "";
+// ===== Test Case Prompt Pieces =====
 
-  const typeSpecificGuidance = {
-    FUNCTIONAL: `
+function buildSectionContext(matchedSections = []) {
+  return matchedSections.length > 0
+    ? `\n**SRS Sections to Reference:** ${matchedSections.join(
+        ", "
+      )}\nUse information from these specific sections when building test cases.`
+    : "";
+}
+
+export const TEST_CASE_TYPE_GUIDANCE_BUILDERS = {
+  FUNCTIONAL: (sectionContext) => `
 **FUNCTIONAL FEATURE TEST CASES:**
 Build test cases that verify the functional behavior:
 
@@ -170,7 +180,7 @@ Build test cases that verify the functional behavior:
    - Verify data flow between components${sectionContext}
 `,
 
-    DATA: `
+  DATA: (sectionContext) => `
 **DATA FEATURE TEST CASES:**
 Build test cases that validate data according to Data Dictionary specifications:
 
@@ -192,7 +202,7 @@ Build test cases that validate data according to Data Dictionary specifications:
    - Test data uniqueness where required${sectionContext}
 `,
 
-    WORKFLOW: `
+  WORKFLOW: (sectionContext) => `
 **WORKFLOW FEATURE TEST CASES:**
 Build test cases that verify complete workflow processes:
 
@@ -212,7 +222,7 @@ Build test cases that verify complete workflow processes:
    - Test parallel processes if mentioned${sectionContext}
 `,
 
-    QUALITY: `
+  QUALITY: (sectionContext) => `
 **QUALITY FEATURE TEST CASES:**
 Build test cases that verify non-functional requirements:
 
@@ -238,7 +248,7 @@ Build test cases that verify non-functional requirements:
    - Test system recovery and failover${sectionContext}
 `,
 
-    INTERFACE: `
+  INTERFACE: (sectionContext) => `
 **INTERFACE FEATURE TEST CASES:**
 Build test cases that verify interface specifications:
 
@@ -260,7 +270,7 @@ Build test cases that verify interface specifications:
    - Test data exchange formats${sectionContext}
 `,
 
-    REPORT: `
+  REPORT: (sectionContext) => `
 **REPORT FEATURE TEST CASES:**
 Build test cases that verify report generation and output:
 
@@ -287,7 +297,7 @@ Build test cases that verify report generation and output:
    - Test report printing and sharing${sectionContext}
 `,
 
-    CONSTRAINT: `
+  CONSTRAINT: (sectionContext) => `
 **CONSTRAINT FEATURE TEST CASES:**
 Build test cases that verify business rules and constraints:
 
@@ -302,7 +312,7 @@ Build test cases that verify business rules and constraints:
    - Test constraint violations are prevented${sectionContext}
 `,
 
-    NOTIFICATION: `
+  NOTIFICATION: (sectionContext) => `
 **NOTIFICATION FEATURE TEST CASES:**
 Build test cases that verify notification and communication features:
 
@@ -321,12 +331,268 @@ Build test cases that verify notification and communication features:
    - Test retry mechanisms
    - Test notification logs${sectionContext}
 `,
-  };
+};
 
-  return (
-    typeSpecificGuidance[featureType] || typeSpecificGuidance.FUNCTIONAL
-  );
+export function createTestCasePromptByFeatureType(
+  featureType,
+  matchedSections = []
+) {
+  const sectionContext = buildSectionContext(matchedSections);
+  const builder =
+    TEST_CASE_TYPE_GUIDANCE_BUILDERS[featureType] ||
+    TEST_CASE_TYPE_GUIDANCE_BUILDERS.FUNCTIONAL;
+
+  return builder(sectionContext);
 }
 
+// ===== Shared Prompt Templates for Reasoning Layer =====
 
+export const FEATURE_EXTRACTION_PROMPT_TEMPLATE = `You are an SRS Feature Extractor. Your task is to extract features DIRECTLY from the SRS text below.
 
+{adaptivePromptText}
+{contextStats}
+
+SRS Text:
+{context}
+
+**CRITICAL INSTRUCTIONS FOR COMPLETE COVERAGE:**
+1. Read the ENTIRE SRS text carefully - do not skip any section or paragraph
+2. Extract EVERY feature, requirement, and capability mentioned - NO EXCEPTIONS
+3. Go through each section systematically and extract all features from it
+4. Count how many features you extract and ensure you didn't miss any
+5. If the SRS has many sections, extract features from ALL sections
+6. Pay special attention to brief requirements, constraints, and quality attributes
+7. Return a COMPLETE JSON array with ALL features found - completeness is more important than speed
+
+Extract all features from the SRS text above. Return JSON array:`;
+
+export const TEST_CASE_GENERATION_PROMPT_TEMPLATE = `You are an expert QA engineer. Based on the following feature description and project requirements context, generate comprehensive test cases.
+
+**FEATURE TYPE:** {featureType}
+{featureTypeGuidance}
+
+**TEST CASE GENERATION RULES:**
+1. Build test cases based on the feature type and SRS specifications.
+2. Cover DIFFERENT scenario types (no duplicates):
+   - At least one Happy Path scenario.
+   - At least one Negative scenario (invalid data / error handling).
+   - At least one Boundary / Edge Case scenario.
+   - If applicable, at least one Integration / Cross-system scenario.
+3. Each test case MUST be unique in its **title**, **description**, and **expectedResult**.
+4. Do NOT repeat the same scenario with only small wording changes.
+5. If two scenarios test exactly the same behavior and expected result, keep only ONE of them and make it the clearest version.
+6. Use the **exact actor terms** from the SRS (e.g., "Patron", "Customer Service (CS)", "Customer") instead of generic "user".
+7. When the SRS defines which actor can see which data (e.g., Customer sees only own requests, CS sees all), create separate test cases per actor with those exact rules.
+8. For FUNCTIONAL features: Create functional test cases (Happy Path, Negative, Alternative Paths).
+9. For DATA features: Create data validation test cases (Field validation, Boundary tests, Data integrity).
+10. For WORKFLOW features: Create end-to-end workflow test cases following exact steps from SRS.
+11. For QUALITY features: Create non-functional test cases (Performance, Security, Usability, Availability) using the exact numeric targets from the SRS when available.
+12. For INTERFACE features: Create interface test cases (UI, API, Hardware interfaces).
+13. For REPORT features: Use the exact report name, fields, performance constraints, and access rules from the SRS context.
+14. For CONSTRAINT features: Create business rule and compliance test cases.
+15. For NOTIFICATION features: Create notification delivery and content test cases.
+
+**TEST CASE STRUCTURE:**
+For each test case, provide:
+- testCaseId: unique identifier (format: TC_XXX)
+- title: clear test case title describing what is being tested
+- description: detailed description of the test scenario
+- steps: array of test step strings (be specific and follow SRS steps if available)
+- expectedResult: expected outcome based on SRS specifications
+- priority: high, medium, or low (based on feature priority and test importance)
+- status: "pending"
+- preconditions: array of prerequisite conditions (e.g., user logged in, data exists)
+- testData: object with test data requirements (optional)
+
+**CRITICAL JSON FORMAT REQUIREMENTS:**
+You MUST return a valid JSON object with a "testCases" array property containing all test cases.
+
+**REQUIRED OUTPUT FORMAT:**
+{{
+  "testCases": [
+    {{
+      "testCaseId": "TC_001",
+      "title": "Test Case Title",
+      "description": "Test description",
+      "steps": ["Step 1", "Step 2"],
+      "expectedResult": "Expected result",
+      "priority": "high",
+      "status": "pending",
+      "preconditions": ["Precondition 1"]
+    }}
+  ]
+}}
+
+**JSON RULES:**
+- Return ONLY valid JSON - no markdown, no code blocks, no explanations
+- The root must be a JSON object with a "testCases" array property
+- Every string value MUST be properly escaped
+- No trailing commas
+- All property names and string values must be in double quotes
+- No comments in JSON
+- Ensure all brackets and braces are properly closed
+
+**IMPORTANT:**
+- Generate multiple test cases covering different scenarios (Happy Path, Negative, Boundary, Edge Cases, Integration if applicable).
+- Make sure **no two test cases are duplicates** (same behavior, same steps, same expectedResult).
+- Reference specific SRS sections when available.
+- Use exact terminology and values from SRS.
+- Ensure JSON is valid and parseable.
+
+**Feature Description:**
+{featureDescription}
+{sectionContext}
+
+**Project Requirements Context:**
+{context}
+
+**FINAL INSTRUCTIONS:**
+1. Generate between 5 and 8 UNIQUE test cases covering different scenarios (Happy Path, Negative, Boundary, Edge, Integration where relevant).
+2. Before returning, REVIEW the list and REMOVE any duplicate or overlapping test cases (keep only the best version of each scenario).
+3. Return ONLY a valid JSON object with "testCases" array - no other text.
+4. Ensure all JSON is properly formatted and valid (no trailing commas, all quotes correct).
+
+Generate comprehensive and UNIQUE test cases now. Return ONLY the JSON object:`;
+
+export const SECTION_MATCHING_PROMPT_TEMPLATE = `You are an expert requirements analyst specializing in comparing and matching document sections. Your task is to analyze the relationship and matching between two sections from a Software Requirements Specification (SRS) document.
+
+**CRITICAL INSTRUCTIONS:**
+1. **Extract Section References**: Identify ALL section numbers/IDs mentioned in each context (e.g., "4.2.1", "3.1.2", "JDECo-SMS-R1")
+2. **Map Relationships**: Create explicit mappings between related elements from both sections
+3. **Functional Matching**: Analyze functional compatibility, not just textual similarity
+4. **Section Linking**: For each matched element, provide the EXACT section reference from the document
+5. **Gap Analysis**: Identify missing elements, inconsistencies, and areas needing improvement
+6. **Be Precise**: Use exact terminology and section numbers from the provided context
+
+**Analysis Structure:**
+
+For each comparison point, analyze:
+- **Element Name**: What is being compared (e.g., "Purpose", "Content", "Users", "Priority")
+- **Section 1 Value**: Exact value from {section1Name} with section reference (e.g., "4.2.1: Report generation")
+- **Section 2 Value**: Exact value from {section2Name} with section reference (e.g., "3.1.2: Notification system")
+- **Match Type**: One of: "exact_match", "complementary", "partial_match", "mismatch", "missing"
+- **Match Score**: Numerical score 0-100 indicating match quality
+- **Section References**: Array of exact section numbers/IDs from the document that support this match
+- **Reasoning**: Detailed explanation of why this match exists or doesn't exist
+
+**Output Format:**
+Return a JSON object with the following structure:
+{{
+  "directAnswer": "Yes/No - Brief answer about matching",
+  "overallMatchScore": 0-100,
+  "functionalMatch": {{
+    "score": 0-100,
+    "analysis": "Detailed analysis",
+    "matchedElements": [
+      {{
+        "element": "element name",
+        "section1Value": "value with section ref",
+        "section2Value": "value with section ref",
+        "matchType": "match type",
+        "matchScore": 0-100,
+        "sectionReferences": ["4.2.1", "3.1.2"],
+        "reasoning": "explanation"
+      }}
+    ]
+  }},
+  "strengths": [
+    {{
+      "title": "Strength title",
+      "description": "Detailed description",
+      "sectionReferences": ["4.2.1", "3.1.2"],
+      "impact": "high/medium/low"
+    }}
+  ],
+  "improvements": [
+    {{
+      "title": "Improvement title",
+      "issue": "What's the problem",
+      "currentState": "Current state with section refs",
+      "recommendedSolution": "What should be done",
+      "sectionReferences": ["4.2.1"],
+      "priority": "high/medium/low"
+    }}
+  ],
+  "finalEvaluation": {{
+    "matchPercentage": 0-100,
+    "criteria": [
+      {{
+        "criterion": "Criterion name",
+        "percentage": 0-100,
+        "evaluation": "excellent/good/needs_improvement"
+      }}
+    ]
+  }},
+  "conclusion": {{
+    "summary": "Overall summary",
+    "recommendation": "Final recommendation",
+    "status": "match_with_improvements/match/no_match"
+  }},
+  "conclusion": {{
+    "summary": "Overall summary",
+    "recommendation": "Final recommendation",
+    "status": "match_with_improvements/match/no_match"
+  }},
+  "integrationPlan": {{
+    "description": "How sections should integrate",
+    "flow": ["step 1", "step 2"],
+    "sectionReferences": ["4.2.1", "3.1.2"]
+  }}
+}}
+
+**IMPORTANT:**
+- Return ONLY valid JSON, no markdown code blocks, no explanations outside JSON
+- Use EXACT section numbers/IDs from the provided context
+- Be specific and detailed in all analyses
+- Every matched element MUST include section references
+- Start with {{ and end with }}
+
+**{section1Name} Context:**
+{section1Context}
+
+**{section2Name} Context:**
+{section2Context}
+
+**Analysis Request:**
+Analyze the matching and relationship between {section1Name} and {section2Name}. Focus on functional compatibility, section references, and provide actionable recommendations.
+
+Generate comprehensive matching analysis:`;
+
+export const GHERKIN_CONVERSION_PROMPT_TEMPLATE = `You are an expert QA engineer specializing in Behavior-Driven Development (BDD) and Gherkin syntax.
+
+**TASK:** Convert the following test case into a well-formatted Gherkin feature file.
+
+{featureContext}
+{srsContext}
+
+**TEST CASE TO CONVERT:**
+- Title: {title}
+- Description: {description}
+- Preconditions: {preconditions}
+- Steps: {steps}
+- Expected Result: {expectedResult}
+
+**GHERKIN CONVERSION RULES:**
+1. Create a clear Feature name based on the test case title (remove special characters, keep it concise)
+2. Use proper Gherkin keywords: Feature, Scenario, Given, When, Then, And, But
+3. Ensure steps are clear, concise, and in natural language
+4. Use Given for preconditions (initial state/setup)
+5. Use When for actions (user actions or system events)
+6. Use Then for expected outcomes (verifications/assertions)
+7. Use And/But to continue steps of the same type
+8. Make steps readable and understandable by non-technical stakeholders
+9. Remove any technical jargon and make it business-friendly
+10. Ensure proper indentation (2 spaces for Feature/Scenario, 4 spaces for steps)
+11. If description exists, add it under Feature with proper indentation (2 spaces)
+12. Do not include keywords (Given/When/Then/And) in the step text itself - they are already provided
+
+**IMPORTANT:**
+- Output ONLY the Gherkin code, no explanations or markdown formatting
+- Do not wrap in code blocks or markdown
+- Ensure proper Gherkin syntax
+- Make the language natural and business-readable
+- Clean up any existing keywords in the steps
+- Each step should be on a single line
+- Use proper spacing and indentation
+
+**OUTPUT:**`;

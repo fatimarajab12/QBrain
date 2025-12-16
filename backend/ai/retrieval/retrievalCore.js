@@ -45,15 +45,20 @@ export async function getComprehensiveRAGContext(
     const allChunks = [];
     const chunksByCategory = {};
 
-    // Step 1: Execute 8 specialized queries, one for each SRS category
+    // Step 1: Execute specialized queries for each SRS category IN PARALLEL
     // Each query targets a specific semantic space (FUNCTIONAL, DATA, INTERFACE, etc.)
-    for (const queryInfo of COMPREHENSIVE_SRS_QUERIES) {
-      const chunks = await getRAGContext(
-        projectId,
-        queryInfo.query,
-        chunksPerQuery
-      );
+    const retrievalPromises = COMPREHENSIVE_SRS_QUERIES.map((queryInfo) =>
+      getRAGContext(projectId, queryInfo.query, chunksPerQuery).then(
+        (chunks) => ({
+          queryInfo,
+          chunks,
+        })
+      )
+    );
 
+    const retrievalResults = await Promise.all(retrievalPromises);
+
+    for (const { queryInfo, chunks } of retrievalResults) {
       // Step 2: Enrich each chunk with category metadata
       // This helps identify feature type during extraction
       const enrichedChunks = chunks.map((chunk) => ({

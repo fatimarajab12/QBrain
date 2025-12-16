@@ -5,7 +5,10 @@ import {
   getComprehensiveRAGContext,
 } from "../retrieval/retrievalCore.js";
 import { dedupeByKey, invokeJSONPrompt } from "./jsonUtils.js";
-import { createTestCasePromptByFeatureType } from "./prompts/index.js";
+import {
+  createTestCasePromptByFeatureType,
+  TEST_CASE_GENERATION_PROMPT_TEMPLATE,
+} from "./prompts/index.js";
 
 async function getContextFromSections(
   projectId,
@@ -16,25 +19,28 @@ async function getContextFromSections(
     return [];
   }
 
-  const allChunks = [];
-  for (const sectionNum of sectionNumbers) {
-    try {
-      const query = `section ${sectionNum} requirements specifications`;
-      const chunks = await getRAGContext(projectId, query, nChunksPerSection);
-      allChunks.push(
-        ...chunks.map((chunk) => ({
+  // Run retrieval for all sections in parallel for better performance
+  const sectionPromises = sectionNumbers.map((sectionNum) =>
+    (async () => {
+      try {
+        const query = `section ${sectionNum} requirements specifications`;
+        const chunks = await getRAGContext(projectId, query, nChunksPerSection);
+        return chunks.map((chunk) => ({
           ...chunk,
           sourceSection: sectionNum,
-        }))
-      );
-    } catch (error) {
-      console.warn(
-        `Could not retrieve context for section ${sectionNum}:`,
-        error.message
-      );
-    }
-  }
-  return allChunks;
+        }));
+      } catch (error) {
+        console.warn(
+          `Could not retrieve context for section ${sectionNum}:`,
+          error.message
+        );
+        return [];
+      }
+    })()
+  );
+
+  const results = await Promise.all(sectionPromises);
+  return results.flat();
 }
 
 function normalizeTestCaseKey(tc) {
@@ -138,93 +144,7 @@ export async function generateTestCasesFromRAG(
     );
 
     const prompt = PromptTemplate.fromTemplate(
-      `You are an expert QA engineer. Based on the following feature description and project requirements context, generate comprehensive test cases.
-
-**FEATURE TYPE:** {featureType}
-{featureTypeGuidance}
-
-**TEST CASE GENERATION RULES:**
-1. Build test cases based on the feature type and SRS specifications.
-2. Cover DIFFERENT scenario types (no duplicates):
-   - At least one Happy Path scenario.
-   - At least one Negative scenario (invalid data / error handling).
-   - At least one Boundary / Edge Case scenario.
-   - If applicable, at least one Integration / Cross-system scenario.
-3. Each test case MUST be unique in its **title**, **description**, and **expectedResult**.
-4. Do NOT repeat the same scenario with only small wording changes.
-5. If two scenarios test exactly the same behavior and expected result, keep only ONE of them and make it the clearest version.
-6. Use the **exact actor terms** from the SRS (e.g., "Patron", "Customer Service (CS)", "Customer") instead of generic "user".
-7. When the SRS defines which actor can see which data (e.g., Customer sees only own requests, CS sees all), create separate test cases per actor with those exact rules.
-8. For FUNCTIONAL features: Create functional test cases (Happy Path, Negative, Alternative Paths).
-9. For DATA features: Create data validation test cases (Field validation, Boundary tests, Data integrity).
-10. For WORKFLOW features: Create end-to-end workflow test cases following exact steps from SRS.
-11. For QUALITY features: Create non-functional test cases (Performance, Security, Usability, Availability) using the exact numeric targets from the SRS when available.
-12. For INTERFACE features: Create interface test cases (UI, API, Hardware interfaces).
-13. For REPORT features: Use the exact report name, fields, performance constraints, and access rules from the SRS context.
-14. For CONSTRAINT features: Create business rule and compliance test cases.
-15. For NOTIFICATION features: Create notification delivery and content test cases.
-
-**TEST CASE STRUCTURE:**
-For each test case, provide:
-- testCaseId: unique identifier (format: TC_XXX)
-- title: clear test case title describing what is being tested
-- description: detailed description of the test scenario
-- steps: array of test step strings (be specific and follow SRS steps if available)
-- expectedResult: expected outcome based on SRS specifications
-- priority: high, medium, or low (based on feature priority and test importance)
-- status: "pending"
-- preconditions: array of prerequisite conditions (e.g., user logged in, data exists)
-- testData: object with test data requirements (optional)
-
-**CRITICAL JSON FORMAT REQUIREMENTS:**
-You MUST return a valid JSON object with a "testCases" array property containing all test cases.
-
-**REQUIRED OUTPUT FORMAT:**
-{{
-  "testCases": [
-    {{
-      "testCaseId": "TC_001",
-      "title": "Test Case Title",
-      "description": "Test description",
-      "steps": ["Step 1", "Step 2"],
-      "expectedResult": "Expected result",
-      "priority": "high",
-      "status": "pending",
-      "preconditions": ["Precondition 1"]
-    }}
-  ]
-}}
-
-**JSON RULES:**
-- Return ONLY valid JSON - no markdown, no code blocks, no explanations
-- The root must be a JSON object with a "testCases" array property
-- Every string value MUST be properly escaped
-- No trailing commas
-- All property names and string values must be in double quotes
-- No comments in JSON
-- Ensure all brackets and braces are properly closed
-
-**IMPORTANT:**
-- Generate multiple test cases covering different scenarios (Happy Path, Negative, Boundary, Edge Cases, Integration if applicable).
-- Make sure **no two test cases are duplicates** (same behavior, same steps, same expectedResult).
-- Reference specific SRS sections when available.
-- Use exact terminology and values from SRS.
-- Ensure JSON is valid and parseable.
-
-**Feature Description:**
-{featureDescription}
-{sectionContext}
-
-**Project Requirements Context:**
-{context}
-
-**FINAL INSTRUCTIONS:**
-1. Generate between 5 and 8 UNIQUE test cases covering different scenarios (Happy Path, Negative, Boundary, Edge, Integration where relevant).
-2. Before returning, REVIEW the list and REMOVE any duplicate or overlapping test cases (keep only the best version of each scenario).
-3. Return ONLY a valid JSON object with "testCases" array - no other text.
-4. Ensure all JSON is properly formatted and valid (no trailing commas, all quotes correct).
-
-Generate comprehensive and UNIQUE test cases now. Return ONLY the JSON object:`
+      TEST_CASE_GENERATION_PROMPT_TEMPLATE
     );
 
     const formattedPrompt = await prompt.format({

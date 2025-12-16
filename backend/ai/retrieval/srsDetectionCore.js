@@ -1,9 +1,6 @@
 /**
  * Retrieval Layer - SRS Type Detection (Canonical Implementation)
  *
- * Used by:
- *  - legacy: ../ragService/srsDetection.js (re-exports)
- *  - new: ./srsDetectionCore.js or ./retrievalStrategies.js
  */
 
 import { getRAGContext } from "./retrievalCore.js";
@@ -19,7 +16,18 @@ export async function detectSRSType(projectId) {
     );
 
     if (!sampleChunks || sampleChunks.length === 0) {
-      throw new Error("No SRS content found for type detection");
+      console.warn(
+        "No SRS content found for type detection query, defaulting to IEEE 830"
+      );
+
+      // Fallback: return a safe default type without throwing
+      return {
+        type: "IEEE_830",
+        name: "IEEE 830",
+        description: "Standard IEEE 830 SRS format",
+        confidence: 40,
+        scores: {},
+      };
     }
 
     const combinedText = sampleChunks.map((chunk) => chunk.text).join("\n\n");

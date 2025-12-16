@@ -15,62 +15,55 @@ import {
   groupChunksBySections,
   analyzeSectionCoverage,
 } from "../retrieval/sectionsCore.js";
-import { createAdaptivePrompt } from "./prompts/index.js";
+import {
+  createAdaptivePrompt,
+  FEATURE_EXTRACTION_PROMPT_TEMPLATE,
+} from "./prompts/index.js";
 import { dedupeByKey, parseJSONSafely } from "./jsonUtils.js";
+
+const FEATURE_TYPE_RULES = [
+  {
+    type: "DATA",
+    keywords: ["data", "field", "table", "dictionary"],
+  },
+  {
+    type: "INTERFACE",
+    keywords: ["interface", "api", "ui", "user interface"],
+  },
+  {
+    type: "QUALITY",
+    keywords: ["quality", "performance", "security", "usability"],
+  },
+  {
+    type: "REPORT",
+    keywords: ["report", "document", "output"],
+  },
+  {
+    type: "CONSTRAINT",
+    keywords: ["constraint", "assumption", "dependency"],
+  },
+  {
+    type: "NOTIFICATION",
+    keywords: ["notification", "alert", "message"],
+  },
+  {
+    type: "WORKFLOW",
+    keywords: ["workflow", "process", "procedure"],
+  },
+];
 
 function classifyFeatureType(feature) {
   if (feature.featureType) return feature.featureType;
 
   const featureText = `${feature.name} ${feature.description}`.toLowerCase();
 
-  if (
-    featureText.includes("data") ||
-    featureText.includes("field") ||
-    featureText.includes("table") ||
-    featureText.includes("dictionary")
-  ) {
-    return "DATA";
-  } else if (
-    featureText.includes("interface") ||
-    featureText.includes("api") ||
-    featureText.includes("ui") ||
-    featureText.includes("user interface")
-  ) {
-    return "INTERFACE";
-  } else if (
-    featureText.includes("quality") ||
-    featureText.includes("performance") ||
-    featureText.includes("security") ||
-    featureText.includes("usability")
-  ) {
-    return "QUALITY";
-  } else if (
-    featureText.includes("report") ||
-    featureText.includes("document") ||
-    featureText.includes("output")
-  ) {
-    return "REPORT";
-  } else if (
-    featureText.includes("constraint") ||
-    featureText.includes("assumption") ||
-    featureText.includes("dependency")
-  ) {
-    return "CONSTRAINT";
-  } else if (
-    featureText.includes("notification") ||
-    featureText.includes("alert") ||
-    featureText.includes("message")
-  ) {
-    return "NOTIFICATION";
-  } else if (
-    featureText.includes("workflow") ||
-    featureText.includes("process") ||
-    featureText.includes("procedure")
-  ) {
-    return "WORKFLOW";
-  } else {
-    return "FUNCTIONAL";
+  for (const rule of FEATURE_TYPE_RULES) {
+    if (rule.keywords.some((kw) => featureText.includes(kw))) {
+      return rule.type;
+    }
   }
+
+  return "FUNCTIONAL";
 }
 
 function enhanceFeatures(features, contextChunks, groupedChunks) {
@@ -338,27 +331,14 @@ export async function generateFeaturesFromRAG(projectId, options = {}) {
         }\n- Make sure to extract features from ALL chunks provided.\n`;
 
     const prompt = PromptTemplate.fromTemplate(
-      `You are an SRS Feature Extractor. Your task is to extract features DIRECTLY from the SRS text below.
-
-${adaptivePromptText}
-${contextStats}
-
-SRS Text:
-{context}
-
-**CRITICAL INSTRUCTIONS FOR COMPLETE COVERAGE:**
-1. Read the ENTIRE SRS text carefully - do not skip any section or paragraph
-2. Extract EVERY feature, requirement, and capability mentioned - NO EXCEPTIONS
-3. Go through each section systematically and extract all features from it
-4. Count how many features you extract and ensure you didn't miss any
-5. If the SRS has many sections, extract features from ALL sections
-6. Pay special attention to brief requirements, constraints, and quality attributes
-7. Return a COMPLETE JSON array with ALL features found - completeness is more important than speed
-
-Extract all features from the SRS text above. Return JSON array:`
+      FEATURE_EXTRACTION_PROMPT_TEMPLATE
     );
 
-    const formattedPrompt = await prompt.format({ context });
+    const formattedPrompt = await prompt.format({
+      context,
+      adaptivePromptText,
+      contextStats,
+    });
     const result = await llm.invoke(formattedPrompt);
 
     const content = result.content;

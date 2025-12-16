@@ -2,6 +2,7 @@ import { createChatModel } from "../config/llmClient.js";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { getRAGContext } from "../retrieval/retrievalCore.js";
 import { Feature } from "../../models/Feature.js";
+import { GHERKIN_CONVERSION_PROMPT_TEMPLATE } from "./prompts/index.js";
 
 export async function convertTestCaseToGherkinWithAI(
   testCase,
@@ -69,44 +70,7 @@ ${contextChunks.map((chunk) => chunk.text).join("\n\n")}
     });
 
     const prompt = PromptTemplate.fromTemplate(
-      `You are an expert QA engineer specializing in Behavior-Driven Development (BDD) and Gherkin syntax.
-
-**TASK:** Convert the following test case into a well-formatted Gherkin feature file.
-
-{featureContext}
-{srsContext}
-
-**TEST CASE TO CONVERT:**
-- Title: {title}
-- Description: {description}
-- Preconditions: {preconditions}
-- Steps: {steps}
-- Expected Result: {expectedResult}
-
-**GHERKIN CONVERSION RULES:**
-1. Create a clear Feature name based on the test case title (remove special characters, keep it concise)
-2. Use proper Gherkin keywords: Feature, Scenario, Given, When, Then, And, But
-3. Ensure steps are clear, concise, and in natural language
-4. Use Given for preconditions (initial state/setup)
-5. Use When for actions (user actions or system events)
-6. Use Then for expected outcomes (verifications/assertions)
-7. Use And/But to continue steps of the same type
-8. Make steps readable and understandable by non-technical stakeholders
-9. Remove any technical jargon and make it business-friendly
-10. Ensure proper indentation (2 spaces for Feature/Scenario, 4 spaces for steps)
-11. If description exists, add it under Feature with proper indentation (2 spaces)
-12. Do not include keywords (Given/When/Then/And) in the step text itself - they are already provided
-
-**IMPORTANT:**
-- Output ONLY the Gherkin code, no explanations or markdown formatting
-- Do not wrap in code blocks or markdown
-- Ensure proper Gherkin syntax
-- Make the language natural and business-readable
-- Clean up any existing keywords in the steps
-- Each step should be on a single line
-- Use proper spacing and indentation
-
-**OUTPUT:**`
+      GHERKIN_CONVERSION_PROMPT_TEMPLATE
     );
 
     const formattedPrompt = await prompt.format({
