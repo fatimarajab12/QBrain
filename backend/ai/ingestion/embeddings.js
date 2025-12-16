@@ -1,21 +1,14 @@
 /**
  * Ingestion Layer - Embeddings
  *
- * This module now contains the actual embeddings implementation used
- * for ingesting text into the vector store. The previous location
- * `backend/ai/embeddings.js` has been turned into a thin re-export
- * to preserve existing imports.
+ * This module owns the actual embedding generation logic.
  */
 
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { cleanText, normalizeVector } from "../../utils/textProcessing.js";
+import { DEFAULT_EMBEDDING_MODEL } from "../config/models.config.js";
 
 let embeddingsInstance = null;
-
-// Use the cheapest embedding model: text-embedding-3-small
-// Cost: $0.02 per 1M tokens (vs $0.13 for text-embedding-3-large)
-const DEFAULT_EMBEDDING_MODEL =
-  process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
 
 function getEmbeddingsInstance(model = DEFAULT_EMBEDDING_MODEL) {
   if (!embeddingsInstance || embeddingsInstance.model !== model) {
@@ -66,7 +59,9 @@ export async function generateEmbeddingsBatch(
 
   // Clean all texts before embedding
   const cleanedTexts = texts
-    .map((text) => (text && typeof text === "string" ? cleanText(text) : null))
+    .map((text) =>
+      text && typeof text === "string" ? cleanText(text) : null
+    )
     .filter((text) => text && text.length > 0);
 
   if (!cleanedTexts.length)
@@ -105,6 +100,3 @@ export function getEmbeddingDimensions(model = DEFAULT_EMBEDDING_MODEL) {
 export function getEmbeddings(model = DEFAULT_EMBEDDING_MODEL) {
   return getEmbeddingsInstance(model);
 }
-
-
-

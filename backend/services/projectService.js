@@ -7,7 +7,10 @@ import { Document } from "@langchain/core/documents";
 import fs from "fs";
 import * as featureService from "./featureService.js";
 import * as testCaseService from "./testCaseService.js";
-import { parsePDFWithDocumentAI, isDocumentAIConfigured } from "../ai/ingestion/documentParser.js";
+import {
+  parsePDFWithDocumentAI,
+  isDocumentAIConfigured,
+} from "../ai/ingestion/documentParser.js";
 
 
 function validateObjectId(id, fieldName = "ID") {

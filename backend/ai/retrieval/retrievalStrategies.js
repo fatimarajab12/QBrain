@@ -1,15 +1,17 @@
 /**
  * Retrieval Layer - RAG Context Strategies
  *
- * Aggregates retrieval-related helpers from the dedicated retrieval
- * implementation modules. New code should prefer importing from here
- * instead of the legacy `ragService` folder.
+ * Convenience re-exports that expose all retrieval-related helpers
+ * from the canonical retrieval core modules.
+ *
+ * New code should import from this file; legacy code continues to use
+ * the `ragService` wrappers which re-export from the same cores.
  */
 
-export * from "./retrieval.js";
-export { detectSRSType } from "./srsDetection.js";
+export * from "./retrievalCore.js";
+export { detectSRSType } from "./srsDetectionCore.js";
 export {
   groupChunksBySections,
   analyzeSectionCoverage,
-} from "./sections.js";
+} from "./sectionsCore.js";
 

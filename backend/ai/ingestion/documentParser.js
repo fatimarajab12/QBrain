@@ -1,11 +1,8 @@
 /**
  * Ingestion Layer - Document Parsing
  *
- * This module hosts the actual implementation for parsing PDF/SRS
- * documents using Google Document AI (with pdf-parse fallback).
- *
- * Existing code that imports from `backend/services/documentAIService.js`
- * is preserved via a thin re-export in that file.
+ * Core PDF/SRS parsing logic using Google Document AI with smart
+ * splitting and a pdf-parse fallback.
  */
 
 import { DocumentProcessorServiceClient } from "@google-cloud/documentai";
@@ -72,14 +69,18 @@ export async function parsePDFWithDocumentAI(filePath) {
     } catch (error) {
       // Check if error is due to page limit exceeded
       if (error.code === 3 && error.message && error.message.includes("pages exceed the limit")) {
-        console.warn(`Document AI page limit exceeded. Attempting to split and process in chunks.`);
+        console.warn(
+          `Document AI page limit exceeded. Attempting to split and process in chunks.`
+        );
         console.warn(`Error: ${error.message}`);
 
         // Try to split PDF and process in chunks
         try {
           return await parsePDFWithSplitting(filePath);
         } catch (splitError) {
-          console.warn(`PDF splitting failed: ${splitError.message}. Falling back to pdf-parse.`);
+          console.warn(
+            `PDF splitting failed: ${splitError.message}. Falling back to pdf-parse.`
+          );
           // Fallback to pdf-parse if splitting fails
           return await parsePDFWithFallback(filePath);
         }
@@ -113,7 +114,9 @@ export async function parsePDFWithDocumentAI(filePath) {
                         ?.map((segment) => {
                           const startIndex = segment.startIndex || 0;
                           const endIndex = segment.endIndex || 0;
-                          return document.text?.substring(startIndex, endIndex) || "";
+                          return (
+                            document.text?.substring(startIndex, endIndex) || ""
+                          );
                         })
                         .join(" ") || "";
                     rowData.push(cellText.trim());
@@ -142,7 +145,9 @@ export async function parsePDFWithDocumentAI(filePath) {
             ?.map((segment) => {
               const startIndex = segment.startIndex || 0;
               const endIndex = segment.endIndex || 0;
-              return document.text?.substring(startIndex, endIndex) || "";
+              return (
+                document.text?.substring(startIndex, endIndex) || ""
+              );
             })
             .join(" ") || "";
 
@@ -155,7 +160,9 @@ export async function parsePDFWithDocumentAI(filePath) {
     }
 
     console.log(
-      `Document AI parsing completed. Pages: ${document.pages?.length || 0}, ` +
+      `Document AI parsing completed. Pages: ${
+        document.pages?.length || 0
+      }, ` +
         `Text length: ${text.length}, Tables: ${tables.length}, Forms: ${forms.length}`
     );
 
@@ -195,9 +202,6 @@ async function parsePDFWithFallback(filePath) {
       // If import fails, try alternative approach
       console.warn("pdf-parse import failed, trying alternative method");
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      // Note: kept require for backward compatibility in CommonJS-like environments
-      // even though this file is ESM.
-      // @ts-ignore
       pdfParse = require("pdf-parse");
     }
 
@@ -209,8 +213,9 @@ async function parsePDFWithFallback(filePath) {
     const estimatedPages = Math.max(1, Math.ceil(data.text.length / 2500));
 
     console.log(
-      `PDF parsed successfully with pdf-parse fallback. Text length: ${data.text.length} characters, ` +
-        `Estimated pages: ${estimatedPages}`
+      `PDF parsed successfully with pdf-parse fallback. Text length: ${
+        data.text.length
+      } characters, ` + `Estimated pages: ${estimatedPages}`
     );
 
     return {
@@ -227,7 +232,9 @@ async function parsePDFWithFallback(filePath) {
     };
   } catch (error) {
     console.error("pdf-parse fallback error:", error.message);
-    throw new Error(`Failed to parse PDF with both Document AI and pdf-parse: ${error.message}`);
+    throw new Error(
+      `Failed to parse PDF with both Document AI and pdf-parse: ${error.message}`
+    );
   }
 }
 
@@ -270,7 +277,9 @@ async function processPDFChunk(filePath) {
                         ?.map((segment) => {
                           const startIndex = segment.startIndex || 0;
                           const endIndex = segment.endIndex || 0;
-                          return document.text?.substring(startIndex, endIndex) || "";
+                          return (
+                            document.text?.substring(startIndex, endIndex) || ""
+                          );
                         })
                         .join(" ") || "";
                     rowData.push(cellText.trim());
@@ -299,7 +308,9 @@ async function processPDFChunk(filePath) {
             ?.map((segment) => {
               const startIndex = segment.startIndex || 0;
               const endIndex = segment.endIndex || 0;
-              return document.text?.substring(startIndex, endIndex) || "";
+              return (
+                document.text?.substring(startIndex, endIndex) || ""
+              );
             })
             .join(" ") || "";
 
@@ -324,7 +335,9 @@ async function processPDFChunk(filePath) {
 
 async function parsePDFWithSplitting(filePath, maxPagesPerChunk = 15) {
   try {
-    console.log(`Splitting PDF into chunks (max ${maxPagesPerChunk} pages per chunk): ${filePath}`);
+    console.log(
+      `Splitting PDF into chunks (max ${maxPagesPerChunk} pages per chunk): ${filePath}`
+    );
 
     // Read the original PDF
     const pdfBytes = fs.readFileSync(filePath);
@@ -342,7 +355,9 @@ async function parsePDFWithSplitting(filePath, maxPagesPerChunk = 15) {
         const endPage = Math.min(startPage + maxPagesPerChunk, totalPages);
         const chunkPages = endPage - startPage;
 
-        console.log(`Creating chunk: pages ${startPage + 1} to ${endPage} (${chunkPages} pages)`);
+        console.log(
+          `Creating chunk: pages ${startPage + 1} to ${endPage} (${chunkPages} pages)`
+        );
 
         // Create a new PDF document for this chunk
         const chunkDoc = await PDFDocument.create();
@@ -370,13 +385,17 @@ async function parsePDFWithSplitting(filePath, maxPagesPerChunk = 15) {
         });
       }
 
-      console.log(`Split PDF into ${chunks.length} chunks. Processing each chunk with Document AI...`);
+      console.log(
+        `Split PDF into ${chunks.length} chunks. Processing each chunk with Document AI...`
+      );
 
       // Process each chunk with Document AI
       const results = [];
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
-        console.log(`Processing chunk ${i + 1}/${chunks.length}: pages ${chunk.startPage}-${chunk.endPage}`);
+        console.log(
+          `Processing chunk ${i + 1}/${chunks.length}: pages ${chunk.startPage}-${chunk.endPage}`
+        );
 
         // Process chunk directly with Document AI only (no fallback to pdf-parse)
         // Since chunks are ≤ 30 pages, Document AI should work
@@ -398,7 +417,10 @@ async function parsePDFWithSplitting(filePath, maxPagesPerChunk = 15) {
         }))
       );
       const mergedForms = results.flatMap((r) => r.forms || []);
-      const totalPagesProcessed = results.reduce((sum, r) => sum + (r.pages || 0), 0);
+      const totalPagesProcessed = results.reduce(
+        (sum, r) => sum + (r.pages || 0),
+        0
+      );
 
       console.log(
         `Merged results: ${totalPagesProcessed} pages, ` +
@@ -427,7 +449,9 @@ async function parsePDFWithSplitting(filePath, maxPagesPerChunk = 15) {
             fs.unlinkSync(tempFile);
           }
         } catch (cleanupError) {
-          console.warn(`Failed to delete temporary file ${tempFile}: ${cleanupError.message}`);
+          console.warn(
+            `Failed to delete temporary file ${tempFile}: ${cleanupError.message}`
+          );
         }
       });
     }
@@ -444,6 +468,4 @@ export function isDocumentAIConfigured() {
     process.env.DOCUMENT_AI_PROCESSOR_ID
   );
 }
-
-
 
