@@ -1,0 +1,222 @@
+.glitch {
+  color: hsl(var(--foreground));
+  font-size: inherit;
+  white-space: nowrap;
+  font-weight: 900;
+  position: relative;
+  margin: 0 auto;
+  user-select: none;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: var(--font-display, system-ui, -apple-system, sans-serif);
+  background: linear-gradient(135deg, 
+    hsl(197, 100%, 65%), 
+    hsl(221, 83%, 63%), 
+    hsl(262, 83%, 68%),
+    hsl(221, 83%, 63%),
+    hsl(197, 100%, 65%)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 300% 300%;
+  animation: gradient-shift 4s ease infinite;
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.3)) 
+          drop-shadow(0 0 20px rgba(59, 130, 246, 0.2));
+  transition: all 0.3s ease;
+}
+
+.glitch::after,
+.glitch::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: var(--font-display, system-ui, -apple-system, sans-serif);
+  background: linear-gradient(135deg, 
+    hsl(197, 100%, 65%), 
+    hsl(221, 83%, 63%), 
+    hsl(262, 83%, 68%)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 300% 300%;
+  background-color: hsl(var(--background));
+  overflow: hidden;
+  clip-path: inset(0 0 0 0);
+  z-index: -1;
+}
+
+.glitch:not(.enable-on-hover)::after {
+  left: 8px;
+  text-shadow: var(--after-shadow, 
+    -3px 0 hsl(0, 70%, 55%),
+    -6px 0 hsl(0, 70%, 45%),
+    -9px 0 hsl(0, 70%, 40%)
+  );
+  animation: animate-glitch var(--after-duration, 3s) infinite linear alternate-reverse,
+             gradient-shift 4s ease infinite;
+  filter: blur(1px);
+  opacity: 0.8;
+}
+.glitch:not(.enable-on-hover)::before {
+  left: -8px;
+  text-shadow: var(--before-shadow, 
+    3px 0 hsl(197, 100%, 60%),
+    6px 0 hsl(197, 100%, 50%),
+    9px 0 hsl(197, 100%, 45%)
+  );
+  animation: animate-glitch var(--before-duration, 2s) infinite linear alternate-reverse,
+             gradient-shift 4s ease infinite;
+  filter: blur(1px);
+  opacity: 0.8;
+}
+
+.glitch.enable-on-hover::after,
+.glitch.enable-on-hover::before {
+  content: '';
+  opacity: 0;
+  animation: none;
+  transition: opacity 0.3s ease;
+}
+
+.glitch.enable-on-hover:hover {
+  filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.5)) 
+          drop-shadow(0 0 30px rgba(59, 130, 246, 0.4))
+          drop-shadow(0 0 45px rgba(99, 102, 241, 0.3));
+  transform: scale(1.02);
+}
+
+.glitch.enable-on-hover:hover::after {
+  content: attr(data-text);
+  opacity: 0.9;
+  left: 8px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: var(--font-display, system-ui, -apple-system, sans-serif);
+  text-shadow: var(--after-shadow, 
+    -3px 0 hsl(0, 70%, 55%),
+    -6px 0 hsl(0, 70%, 45%),
+    -9px 0 hsl(0, 70%, 40%)
+  );
+  animation: animate-glitch var(--after-duration, 3s) infinite linear alternate-reverse,
+             gradient-shift 4s ease infinite;
+  filter: blur(1px);
+}
+.glitch.enable-on-hover:hover::before {
+  content: attr(data-text);
+  opacity: 0.9;
+  left: -8px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: var(--font-display, system-ui, -apple-system, sans-serif);
+  text-shadow: var(--before-shadow, 
+    3px 0 hsl(197, 100%, 60%),
+    6px 0 hsl(197, 100%, 50%),
+    9px 0 hsl(197, 100%, 45%)
+  );
+  animation: animate-glitch var(--before-duration, 2s) infinite linear alternate-reverse,
+             gradient-shift 4s ease infinite;
+  filter: blur(1px);
+}
+
+@keyframes animate-glitch {
+  0% {
+    clip-path: inset(20% 0 50% 0);
+  }
+  5% {
+    clip-path: inset(10% 0 60% 0);
+  }
+  10% {
+    clip-path: inset(15% 0 55% 0);
+  }
+  15% {
+    clip-path: inset(25% 0 35% 0);
+  }
+  20% {
+    clip-path: inset(30% 0 40% 0);
+  }
+  25% {
+    clip-path: inset(40% 0 20% 0);
+  }
+  30% {
+    clip-path: inset(10% 0 60% 0);
+  }
+  35% {
+    clip-path: inset(15% 0 55% 0);
+  }
+  40% {
+    clip-path: inset(25% 0 35% 0);
+  }
+  45% {
+    clip-path: inset(30% 0 40% 0);
+  }
+  50% {
+    clip-path: inset(20% 0 50% 0);
+  }
+  55% {
+    clip-path: inset(10% 0 60% 0);
+  }
+  60% {
+    clip-path: inset(15% 0 55% 0);
+  }
+  65% {
+    clip-path: inset(25% 0 35% 0);
+  }
+  70% {
+    clip-path: inset(30% 0 40% 0);
+  }
+  75% {
+    clip-path: inset(40% 0 20% 0);
+  }
+  80% {
+    clip-path: inset(20% 0 50% 0);
+  }
+  85% {
+    clip-path: inset(10% 0 60% 0);
+  }
+  90% {
+    clip-path: inset(15% 0 55% 0);
+  }
+  95% {
+    clip-path: inset(25% 0 35% 0);
+  }
+  100% {
+    clip-path: inset(30% 0 40% 0);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  75% {
+    background-position: 0% 100%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Additional shine effect */
+.glitch::selection {
+  background: rgba(34, 211, 238, 0.2);
+  color: hsl(197, 100%, 65%);
+}
+
+.glitch::-moz-selection {
+  background: rgba(34, 211, 238, 0.2);
+  color: hsl(197, 100%, 65%);
+}
+

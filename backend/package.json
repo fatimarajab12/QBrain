@@ -1,0 +1,59 @@
+{
+  "name": "qbrain-backend",
+  "version": "1.0.0",
+  "description": "Simple Node.js backend for QBrain with LangChain",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "npx nodemon server.js",
+    "promote-admin": "node scripts/promote-admin.js",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch",
+    "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathPatterns=/test/unit/"
+  },
+  "author": "Fatima Rajab",
+  "license": "MIT",
+  "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
+    "@google-cloud/documentai": "^9.5.0",
+    "@google-cloud/storage": "^7.18.0",
+    "@langchain/community": "^1.0.5",
+    "@langchain/core": "^0.3.0",
+    "@langchain/openai": "^0.3.0",
+    "@supabase/supabase-js": "^2.84.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
+    "body-parser": "^2.2.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "joi": "^18.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "langchain": "^0.3.0",
+    "mongoose": "^8.20.1",
+    "multer": "^2.0.2",
+    "nanoid": "^5.1.6",
+    "node-cache": "^5.1.2",
+    "nodemailer": "^7.0.10",
+    "openai": "^4.52.0",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^5.4.394",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

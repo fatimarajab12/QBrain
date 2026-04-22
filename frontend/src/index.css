@@ -1,0 +1,614 @@
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700&family=Inter:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-arabic: 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Inter', 'Tajawal', system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 220 25% 98%;
+    --foreground: 230 25% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 230 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 25% 12%;
+
+    --primary: 197 100% 47%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 197 100% 42%;
+    --primary-hover-light: 197 100% 52%;
+
+    --secondary: 220 20% 95%;
+    --secondary-foreground: 230 25% 12%;
+    --secondary-hover: 220 20% 90%;
+
+    --muted: 220 20% 95%;
+    --muted-foreground: 230 15% 45%;
+    --muted-hover: 220 20% 92%;
+
+    --accent: 197 100% 47%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 197 100% 42%;
+
+    --success: 145 65% 48%;
+    --success-foreground: 0 0% 100%;
+    --success-hover: 145 65% 43%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 0 75% 50%;
+
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 197 100% 47%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(197 100% 47%) 0%, hsl(217 91% 60%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(197 100% 47%) 0%, hsl(217 91% 60%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(197 100% 47%) 0%, hsl(217 91% 60%) 50%, hsl(197 100% 47%) 100%);
+    
+    --shadow-soft: 0 2px 20px -4px hsl(197 100% 47% / 0.15);
+    --shadow-medium: 0 4px 30px -6px hsl(197 100% 47% / 0.25);
+    --shadow-strong: 0 8px 40px -8px hsl(197 100% 47% / 0.35);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 230 25% 12%;
+    --sidebar-primary: 197 100% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 95%;
+    --sidebar-accent-foreground: 230 25% 12%;
+    --sidebar-border: 220 20% 88%;
+    --sidebar-ring: 197 100% 47%;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 213 31% 95%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 213 31% 95%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 213 31% 95%;
+
+    --primary: 197 100% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 197 100% 50%;
+    --primary-hover-light: 197 100% 60%;
+
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 213 31% 95%;
+    --secondary-hover: 217 33% 18%;
+
+    --muted: 217 33% 15%;
+    --muted-foreground: 215 20% 70%;
+    --muted-hover: 217 33% 18%;
+
+    --accent: 197 100% 55%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 197 100% 50%;
+
+    --success: 142 71% 50%;
+    --success-foreground: 0 0% 100%;
+    --success-hover: 142 71% 45%;
+
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 0 84% 60%;
+
+    --border: 217 33% 20%;
+    --input: 217 33% 18%;
+    --ring: 197 100% 55%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(197 100% 55%) 0%, hsl(217 91% 65%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(197 100% 55%) 0%, hsl(217 91% 65%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(197 100% 55%) 0%, hsl(217 91% 65%) 50%, hsl(197 100% 55%) 100%);
+    
+    --shadow-soft: 0 2px 20px -4px hsl(197 100% 55% / 0.25);
+    --shadow-medium: 0 4px 30px -6px hsl(197 100% 55% / 0.35);
+    --shadow-strong: 0 8px 40px -8px hsl(197 100% 55% / 0.45);
+
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 213 31% 95%;
+    --sidebar-primary: 197 100% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 15%;
+    --sidebar-accent-foreground: 213 31% 95%;
+    --sidebar-border: 217 33% 20%;
+    --sidebar-ring: 197 100% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-arabic);
+    font-feature-settings: 'cv02','cv03','cv04','cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.6;
+    min-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  h1 {
+    @apply text-6xl font-extra;
+  }
+  h2 {
+    @apply text-5xl font-extra;
+  }
+  h3 {
+    @apply text-4xl font-extra;
+  }
+  h4 {
+    @apply text-3xl font-bold;
+  }
+  h5 {
+    @apply text-2xl font-bold;
+  }
+  h6 {
+    @apply text-xl font-bold;
+  }
+
+  p, span, small, label, li, a {
+    color: hsl(var(--foreground) / 0.95);
+    @apply text-base font-normal;
+    line-height: 1.7;
+    font-size: 1.125rem;
+  }
+  
+  p strong, span strong, .text-important {
+    font-weight: 700;
+    color: hsl(var(--foreground) / 1);
+  }
+
+  .text-strong {
+    @apply font-bold text-xl;
+  }
+
+  [data-sidebar="sidebar"] {
+    font-size: 1.125rem;
+    font-weight: 600;
+    background: hsl(var(--sidebar-background));
+  }
+
+  [data-sidebar="menu-button"] {
+    position: relative;
+    overflow: hidden;
+  }
+
+  [data-sidebar="menu-button"]::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.5));
+    transition: width 0.3s ease;
+    border-radius: 0 4px 4px 0;
+  }
+
+  [data-sidebar="menu-button"]:hover::before,
+  [data-sidebar="menu-button"][data-active="true"]::before {
+    width: 3px;
+  }
+
+  [data-sidebar="sidebar"] [class*="Avatar"] {
+    transition: all 0.3s ease;
+  }
+
+  [data-sidebar="sidebar"] [data-sidebar="menu-button"] {
+    min-width: 0;
+  }
+
+  [data-sidebar="sidebar"] [data-sidebar="menu-button"] > div {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  [data-sidebar="sidebar"] [data-sidebar="menu-button"] span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .arabic {
+    font-family: var(--font-arabic);
+  }
+  * {
+    text-rendering: optimizeLegibility;
+  }
+
+  [class*="ProjectChatBot"] p,
+  [class*="ProjectChatBot"] span,
+  [class*="ProjectChatBot"] div {
+    font-family: var(--font-arabic);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    color: hsl(var(--foreground) / 0.95);
+  }
+
+  .chat-message {
+    line-height: 1.7;
+    letter-spacing: 0.015em;
+    font-size: 1.125rem;
+  }
+  
+  [class*="ProjectChatBot"] h1,
+  [class*="ProjectChatBot"] h2,
+  [class*="ProjectChatBot"] h3,
+  [class*="ProjectChatBot"] h4,
+  [class*="ProjectChatBot"] h5,
+  [class*="ProjectChatBot"] h6 {
+    font-weight: 700;
+    color: hsl(var(--foreground) / 1);
+    line-height: 1.4;
+  }
+
+  [class*="ProjectChatBot"] button[class*="fixed"] {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+  
+  button, .btn, [role="button"] {
+    font-weight: 600;
+    font-size: 1.125rem;
+  }
+  
+  [data-sidebar="sidebar"] a,
+  [data-sidebar="sidebar"] span,
+  [data-sidebar="sidebar"] button {
+    color: hsl(var(--sidebar-foreground) / 0.95);
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-ai {
+    background: linear-gradient(135deg, hsl(197 100% 47%) 0%, hsl(217 91% 60%) 100%);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .shadow-strong {
+    box-shadow: var(--shadow-strong);
+  }
+
+  .hover-primary {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .hover-primary:hover {
+    background-color: hsl(var(--primary-hover));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
+  }
+
+  .hover-accent {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .hover-accent:hover {
+    background-color: hsl(var(--accent-hover));
+    color: hsl(var(--accent-foreground));
+  }
+
+  .hover-card {
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .hover-card:hover {
+    border-color: hsl(var(--primary) / 0.4);
+    box-shadow: 0 8px 24px hsl(var(--primary) / 0.15);
+    transform: translateY(-2px);
+  }
+
+  .hover-muted {
+    transition: background-color 0.2s ease-in-out;
+  }
+  
+  .hover-muted:hover {
+    background-color: hsl(var(--muted-hover));
+  }
+
+  .hover-border-primary {
+    transition: border-color 0.2s ease-in-out;
+  }
+  
+  .hover-border-primary:hover {
+    border-color: hsl(var(--primary) / 0.5);
+  }
+
+  button:not(:disabled) {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Remove position relative from buttons with absolute positioning (like Dialog close button) */
+  button[class*="absolute"]:not(:disabled) {
+    position: absolute !important;
+    overflow: visible;
+  }
+
+  /* Remove position relative from buttons inside DialogContent (CreateBugDialog) */
+  [role="dialog"] button:not(:disabled),
+  [data-radix-dialog-content] button:not(:disabled) {
+    position: static;
+    overflow: visible;
+  }
+
+  /* Keep absolute positioning for buttons that explicitly have absolute class */
+  [role="dialog"] button[class*="absolute"]:not(:disabled),
+  [data-radix-dialog-content] button[class*="absolute"]:not(:disabled) {
+    position: absolute !important;
+  }
+
+  button:not(:disabled)::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  /* Remove ::before pseudo-element for buttons with absolute positioning */
+  button[class*="absolute"]:not(:disabled)::before {
+    content: none;
+  }
+
+  button:not(:disabled):active::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  button[class*="bg-primary"]:hover {
+    box-shadow: 0 8px 24px hsl(var(--primary) / 0.4);
+  }
+
+  button[class*="bg-destructive"]:hover {
+    box-shadow: 0 8px 24px hsl(var(--destructive) / 0.4);
+  }
+
+  button[class*="border"]:hover {
+    border-width: 2px;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 229, 255, 0.1),
+      transparent
+    );
+    background-size: 1000px 100%;
+  }
+
+
+  @keyframes gradientShift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+  }
+
+  /* Custom Scrollbar Styles */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* For Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) hsl(var(--muted));
+  }
+
+  /* Global Scrollbar Styles for html and body */
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 5px;
+    transition: background 0.2s ease;
+  }
+
+  html::-webkit-scrollbar-thumb:hover,
+  body::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* For Firefox - Global scrollbar */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) hsl(var(--background));
+  }
+
+  /* Dialog Content Scrollbar */
+  [role="dialog"] [data-radix-dialog-content],
+  [data-radix-dialog-content] {
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  [role="dialog"] [data-radix-dialog-content]::-webkit-scrollbar,
+  [data-radix-dialog-content]::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  [role="dialog"] [data-radix-dialog-content]::-webkit-scrollbar-track,
+  [data-radix-dialog-content]::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  [role="dialog"] [data-radix-dialog-content]::-webkit-scrollbar-thumb,
+  [data-radix-dialog-content]::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+
+  [role="dialog"] [data-radix-dialog-content]::-webkit-scrollbar-thumb:hover,
+  [data-radix-dialog-content]::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* For Firefox - Dialog scrollbar */
+  [role="dialog"] [data-radix-dialog-content],
+  [data-radix-dialog-content] {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) hsl(var(--muted));
+  }
+}

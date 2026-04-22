@@ -1,0 +1,46 @@
+import { TestCase } from '@/types/test-case';
+
+export const getPriorityColor = (priority: TestCase["priority"]) => {
+  switch (priority) {
+    case "high": return "bg-destructive/10 text-destructive";
+    case "medium": return "bg-accent/10 text-accent";
+    case "low": return "bg-success/10 text-success";
+  }
+};
+
+export const getStatusColor = (status: TestCase["status"]) => {
+  switch (status) {
+    case "passed": return "bg-success/10 text-success";
+    case "failed": return "bg-destructive/10 text-destructive";
+    case "pending": return "bg-muted text-muted-foreground";
+  }
+};
+
+export const getStatusIcon = (status: TestCase["status"]) => {
+  switch (status) {
+    case "passed": return "CheckCircle2";
+    case "failed": return "AlertCircle";
+    case "pending": return "Play";
+  }
+};
+
+export const calculateTestStats = (testCases: TestCase[]) => {
+  const passedTests = testCases.filter(tc => tc.status === "passed").length;
+  const failedTests = testCases.filter(tc => tc.status === "failed").length;
+  const pendingTests = testCases.filter(tc => tc.status === "pending").length;
+  
+  return { passedTests, failedTests, pendingTests };
+};
+
+export const newTestCaseTemplate: Omit<TestCase, '_id'> = {
+  title: "",
+  priority: "medium",
+  status: "pending",
+  preconditions: [],
+  steps: [],
+  expectedResult: "",
+  actualResult: "",
+  bugReports: [],
+  featureId: "", 
+  projectId: undefined
+};

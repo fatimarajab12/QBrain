@@ -1,0 +1,64 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { User, Mail, Calendar, Shield } from "lucide-react";
+import { User as UserType } from "@/types/user";
+
+interface AccountInfoCardProps {
+  user: UserType;
+}
+
+const formatDate = (date?: string | Date): string => {
+  if (!date) return 'N/A';
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+};
+
+const AccountInfoCard = ({ user }: AccountInfoCardProps) => {
+  const infoItems = [
+    {
+      icon: User,
+      label: "Full Name",
+      value: user.name,
+    },
+    {
+      icon: Mail,
+      label: "Email Address",
+      value: user.email,
+    },
+    {
+      icon: Shield,
+      label: "Verification Status",
+      value: user.isVerified ? "Verified" : "Not Verified",
+    },
+    {
+      icon: Calendar,
+      label: "Member Since",
+      value: formatDate(user.createdAt),
+    },
+  ];
+
+  return (
+    <Card className="shadow-soft border-border">
+      <CardHeader>
+        <CardTitle>Account Information</CardTitle>
+        <CardDescription>Your basic account details</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {infoItems.map((item, index) => (
+          <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+            <item.icon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">{item.label}</p>
+              <p className="font-medium truncate">{item.value}</p>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default AccountInfoCard;
